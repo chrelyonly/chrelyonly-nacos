@@ -4,7 +4,7 @@ services:
     container_name: chrelyonly-nacos-app
     volumes:
       - /www/dk_project/dk_app/chrelyonly-nacos-app/app:/app
-    working_dir: /app
+#    working_dir: /app
     dns:
       - 114.114.114.114
       - 1.1.1.1
