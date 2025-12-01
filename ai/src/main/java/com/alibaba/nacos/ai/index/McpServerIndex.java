@@ -20,35 +20,53 @@ import com.alibaba.nacos.ai.model.mcp.McpServerIndexData;
 import com.alibaba.nacos.api.model.Page;
 
 /**
- * Server info index interface.
- * We should know the relation between the mcp server id and namespaceId + mcpServerName.
+ * Server info index interface. We should know the relation between the mcp server id and namespaceId + mcpServerName.
+ *
  * @author xinluo
  */
 public interface McpServerIndex {
-
+    
     /**
-     * Search Mcp server by name and namespaceId.
-     * @param namespaceId namespaceId
-     * @param name mcp server name
-     * @param search search mode
-     * @param offset offset to list
-     * @param limit list limit
-     * @return MCP Server Summery
+     * Search Mcp server by name and namespaceId with pagination.
+     *
+     * @param namespaceId namespace ID
+     * @param name        mcp server name
+     * @param search      search mode
+     * @param pageNo      page number
+     * @param limit       page size limit
+     * @return MCP Server Index Data page
      */
-    Page<McpServerIndexData> searchMcpServerByName(String namespaceId, String name, String search, int offset, int limit);
-
+    Page<McpServerIndexData> searchMcpServerByNameWithPage(String namespaceId, String name, String search, int pageNo,
+            int limit);
     /**
      * Get mcp server by id.
+     *
      * @param id mcp server id
      * @return {@link McpServerIndexData}
      */
     McpServerIndexData getMcpServerById(String id);
-
+    
     /**
      * Get mcp server by namespaceId and servername.
+     *
      * @param namespaceId namespaceId
-     * @param name servername
+     * @param name        servername
      * @return {@link McpServerIndexData}
      */
     McpServerIndexData getMcpServerByName(String namespaceId, String name);
+    
+    /**
+     * Remove cache entry by namespace ID and MCP server name.
+     *
+     * @param namespaceId namespace ID
+     * @param mcpName     MCP server name
+     */
+    void removeMcpServerByName(String namespaceId, String mcpName);
+    
+    /**
+     * Remove cache entry by MCP server ID.
+     *
+     * @param mcpId MCP server ID
+     */
+    void removeMcpServerById(String mcpId);
 }

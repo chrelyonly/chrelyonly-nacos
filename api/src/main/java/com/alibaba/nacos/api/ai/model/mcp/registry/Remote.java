@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2024 Alibaba Group Holding Ltd.
+ * Copyright 1999-2025 Alibaba Group Holding Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,32 @@
 
 package com.alibaba.nacos.api.ai.model.mcp.registry;
 
-@SuppressWarnings({"checkstyle:MethodName", "checkstyle:ParameterName", "checkstyle:MemberName", 
-        "PMD.ClassMustHaveAuthorRule", "PMD.LowerCamelCaseVariableNamingRule"})
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.util.List;
+
+/**
+ * Remote per components.schemas.Remote.
+ *
+ * @author xinluo
+ */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Remote {
-    
-    private String transport_type;
-    
+
+    private String type;
+
     private String url;
 
-    public String getTransport_type() {
-        return transport_type;
+    private List<KeyValueInput> headers;
+
+    public String getType() {
+        return type;
     }
 
-    public void setTransport_type(String transport_type) {
-        this.transport_type = transport_type;
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getUrl() {
@@ -38,5 +50,13 @@ public class Remote {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public List<KeyValueInput> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(List<KeyValueInput> headers) {
+        this.headers = headers;
     }
 }

@@ -112,6 +112,8 @@ public class DefaultPublisher extends Thread implements EventPublisher {
                 receiveEvent(event);
                 UPDATER.compareAndSet(this, lastEventSequence, Math.max(lastEventSequence, event.sequence()));
             }
+        } catch (InterruptedException e) {
+            // [issue #13752] ignore stack log
         } catch (Throwable ex) {
             LOGGER.error("Event listener exception : ", ex);
         }
@@ -153,6 +155,8 @@ public class DefaultPublisher extends Thread implements EventPublisher {
     public void shutdown() {
         this.shutdown = true;
         this.queue.clear();
+        // Interrupt the thread to stop processing events: queue.take().
+        this.interrupt();
     }
     
     public boolean isInitialized() {

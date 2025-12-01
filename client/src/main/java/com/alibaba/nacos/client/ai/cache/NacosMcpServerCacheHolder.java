@@ -21,6 +21,7 @@ import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.ai.event.McpServerChangedEvent;
 import com.alibaba.nacos.client.ai.remote.AiGrpcClient;
+import com.alibaba.nacos.client.ai.utils.CacheKeyUtils;
 import com.alibaba.nacos.client.env.NacosClientProperties;
 import com.alibaba.nacos.common.executor.NameThreadFactory;
 import com.alibaba.nacos.common.lifecycle.Closeable;
@@ -73,11 +74,11 @@ public class NacosMcpServerCacheHolder implements Closeable {
         this.updaterExecutor = new ScheduledThreadPoolExecutor(1,
                 new NameThreadFactory("com.alibaba.nacos.client.ai.mcp.server.updater"));
         this.updateIntervalMillis = properties.getLong(AiConstants.AI_MCP_SERVER_CACHE_UPDATE_INTERVAL,
-                AiConstants.DEFAULT_AI_MCP_SERVER_CACHE_UPDATE_INTERVAL);
+                AiConstants.DEFAULT_AI_CACHE_UPDATE_INTERVAL);
     }
     
     public McpServerDetailInfo getMcpServer(String mcpName, String version) {
-        String key = buildCacheKey(mcpName, version);
+        String key = CacheKeyUtils.buildMcpServerKey(mcpName, version);
         return mcpServerCache.get(key);
     }
     
@@ -90,16 +91,16 @@ public class NacosMcpServerCacheHolder implements Closeable {
         String mcpName = detailInfo.getName();
         String version = detailInfo.getVersionDetail().getVersion();
         Boolean isLatest = detailInfo.getVersionDetail().getIs_latest();
-        String key = buildCacheKey(mcpName, version);
+        String key = CacheKeyUtils.buildMcpServerKey(mcpName, version);
         McpServerDetailInfo oldMcpServer = mcpServerCache.get(key);
         mcpServerCache.put(key, detailInfo);
         if (null != isLatest && isLatest) {
-            String latestVersionKey = buildCacheKey(mcpName, null);
+            String latestVersionKey = CacheKeyUtils.buildMcpServerKey(mcpName, null);
             mcpServerCache.put(latestVersionKey, detailInfo);
         }
         if (isMcpServerChanged(oldMcpServer, detailInfo)) {
             LOGGER.info("mcp server {} changed.", detailInfo.getName());
-            NotifyCenter.publishEvent(new McpServerChangedEvent(detailInfo.getName(), detailInfo));
+            NotifyCenter.publishEvent(new McpServerChangedEvent(detailInfo));
         }
     }
     
@@ -107,10 +108,12 @@ public class NacosMcpServerCacheHolder implements Closeable {
      * Add new update task for mcp server.
      *
      * @param mcpName name of mcp server
+     * @param version version of mcp server
      */
-    public void addMcpServerUpdateTask(String mcpName) {
-        this.updateTaskMap.computeIfAbsent(mcpName, s -> {
-            McpServerUpdater updateTask = new McpServerUpdater(mcpName);
+    public void addMcpServerUpdateTask(String mcpName, String version) {
+        String mcpServerKey = CacheKeyUtils.buildMcpServerKey(mcpName, version);
+        this.updateTaskMap.computeIfAbsent(mcpServerKey, s -> {
+            McpServerUpdater updateTask = new McpServerUpdater(mcpName, version);
             updaterExecutor.schedule(updateTask, updateIntervalMillis, TimeUnit.MILLISECONDS);
             return updateTask;
         });
@@ -120,9 +123,11 @@ public class NacosMcpServerCacheHolder implements Closeable {
      * Remove new update task for mcp server.
      *
      * @param mcpName name of mcp server
+     * @param version version of mcp server
      */
-    public void removeMcpServerUpdateTask(String mcpName) {
-        McpServerUpdater updateTask = this.updateTaskMap.remove(mcpName);
+    public void removeMcpServerUpdateTask(String mcpName, String version) {
+        String mcpServerKey = CacheKeyUtils.buildMcpServerKey(mcpName, version);
+        McpServerUpdater updateTask = this.updateTaskMap.remove(mcpServerKey);
         if (null != updateTask) {
             updateTask.cancel();
         }
@@ -146,13 +151,6 @@ public class NacosMcpServerCacheHolder implements Closeable {
         return false;
     }
     
-    private String buildCacheKey(String mcpName, String version) {
-        if (StringUtils.isBlank(version)) {
-            version = "latest";
-        }
-        return mcpName + "::" + version;
-    }
-    
     @Override
     public void shutdown() throws NacosException {
         this.updaterExecutor.shutdownNow();
@@ -162,10 +160,13 @@ public class NacosMcpServerCacheHolder implements Closeable {
         
         private final String mcpName;
         
+        private final String version;
+        
         private final AtomicBoolean cancel;
         
-        public McpServerUpdater(String mcpName) {
+        public McpServerUpdater(String mcpName, String version) {
             this.mcpName = mcpName;
+            this.version = version;
             this.cancel = new AtomicBoolean(false);
         }
         
@@ -175,9 +176,15 @@ public class NacosMcpServerCacheHolder implements Closeable {
                 return;
             }
             try {
-                McpServerDetailInfo detailInfo = aiGrpcClient.queryMcpServer(mcpName, null);
+                McpServerDetailInfo detailInfo = aiGrpcClient.queryMcpServer(mcpName, version);
                 processMcpServerDetailInfo(detailInfo);
             } catch (Exception e) {
+                if (e instanceof NacosException) {
+                    NacosException nacosException = (NacosException) e;
+                    if (nacosException.getErrCode() == NacosException.NOT_FOUND) {
+                        return;
+                    }
+                }
                 LOGGER.warn("Mcp server updater execute query failed", e);
             } finally {
                 if (!cancel.get()) {

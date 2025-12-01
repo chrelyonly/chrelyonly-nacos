@@ -16,27 +16,19 @@
 
 package com.alibaba.nacos.ai.index;
 
+import java.util.List;
+
 import com.alibaba.nacos.ai.constant.Constants;
 import com.alibaba.nacos.ai.model.mcp.McpServerIndexData;
 import com.alibaba.nacos.ai.utils.McpConfigUtils;
-import com.alibaba.nacos.api.ai.model.mcp.McpServerVersionInfo;
 import com.alibaba.nacos.api.model.Page;
-import com.alibaba.nacos.api.model.response.Namespace;
 import com.alibaba.nacos.common.utils.CollectionUtils;
-import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
-import com.alibaba.nacos.config.server.model.ConfigInfo;
 import com.alibaba.nacos.config.server.service.ConfigDetailService;
 import com.alibaba.nacos.config.server.service.query.ConfigQueryChainService;
 import com.alibaba.nacos.config.server.service.query.model.ConfigQueryChainRequest;
 import com.alibaba.nacos.config.server.service.query.model.ConfigQueryChainResponse;
 import com.alibaba.nacos.core.service.NamespaceOperationService;
-import org.springframework.stereotype.Service;
-
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Plain Mcp server index implementation. This is empty index implementation so the performance is not well. this should
@@ -44,80 +36,14 @@ import java.util.Objects;
  *
  * @author xinluo
  */
-@Service
-public class PlainMcpServerIndex implements McpServerIndex {
-    
-    private final ConfigDetailService configDetailService;
-    
-    private final NamespaceOperationService namespaceOperationService;
+public class PlainMcpServerIndex extends AbstractMcpServerIndex {
     
     private final ConfigQueryChainService configQueryChainService;
     
     public PlainMcpServerIndex(NamespaceOperationService namespaceOperationService,
             ConfigDetailService configDetailService, ConfigQueryChainService configQueryChainService) {
-        this.namespaceOperationService = namespaceOperationService;
-        this.configDetailService = configDetailService;
+        super(namespaceOperationService, configDetailService);
         this.configQueryChainService = configQueryChainService;
-    }
-    
-    /**
-     * Search Mcp server by name and namespaceId. If namespaceId is empty, we search all the namespace.
-     *
-     * @param namespaceId namespaceId empty for all namespaces
-     * @param name        mcp server name, empty for all servers
-     * @param search      search mode
-     * @param offset      offset
-     * @param limit       limit
-     * @return MCP Server Summery
-     */
-    @Override
-    public Page<McpServerIndexData> searchMcpServerByName(String namespaceId, String name, String search, int offset,
-            int limit) {
-        return searchMcpServerByName0(namespaceId, name, search, offset, limit);
-    }
-    
-    private Page<McpServerIndexData> searchMcpServerByName0(String namespaceId, String name, String search, int offset,
-            int limit) {
-        int pageNo = offset / limit + 1;
-        Page<ConfigInfo> serverInfos = searchMcpServers(namespaceId, name, search, pageNo, limit);
-        List<McpServerIndexData> indexDataList = serverInfos.getPageItems().stream()
-                .map(this::mapMcpServerVersionConfigToIndexData).toList();
-        Page<McpServerIndexData> result = new Page<>();
-        result.setPageItems(indexDataList);
-        result.setTotalCount(serverInfos.getTotalCount());
-        result.setPagesAvailable((int) Math.ceil((double) serverInfos.getTotalCount() / (double) limit));
-        result.setPageNumber(pageNo);
-        return result;
-    }
-    
-    private McpServerIndexData mapMcpServerVersionConfigToIndexData(ConfigInfo configInfo) {
-        McpServerIndexData data = new McpServerIndexData();
-        McpServerVersionInfo versionInfo = JacksonUtils.toObj(configInfo.getContent(), McpServerVersionInfo.class);
-        data.setId(versionInfo.getId());
-        data.setNamespaceId(configInfo.getTenant());
-        return data;
-    }
-    
-    private Page<ConfigInfo> searchMcpServers(String namespace, String serverName, String search, int pageNo,
-            int limit) {
-        HashMap<String, Object> advanceInfo = new HashMap<>(1);
-        if (Objects.isNull(serverName)) {
-            serverName = StringUtils.EMPTY;
-        }
-        
-        String dataId = Constants.ALL_PATTERN;
-        if (Constants.MCP_LIST_SEARCH_BLUR.equals(search) || StringUtils.isEmpty(serverName)) {
-            String nameTag = McpConfigUtils.formatServerNameTagBlurSearchValue(serverName);
-            advanceInfo.put(Constants.CONFIG_TAGS_NAME, nameTag);
-            search = Constants.MCP_LIST_SEARCH_BLUR;
-        } else {
-            advanceInfo.put(Constants.CONFIG_TAGS_NAME,
-                    McpConfigUtils.formatServerNameTagAccurateSearchValue(serverName));
-            dataId = null;
-        }
-        
-        return configDetailService.findConfigInfoPage(search, pageNo, limit, dataId,
-                Constants.MCP_SERVER_VERSIONS_GROUP, namespace, advanceInfo);
     }
     
     /**
@@ -161,23 +87,48 @@ public class PlainMcpServerIndex implements McpServerIndex {
     
     /**
      * Get mcp server by namespaceId and servername.
-     *
+     * If namespaceId is empty, we search all namespaces and return the first found server.
      * @param namespaceId namespaceId
      * @param name        servername
      * @return {@link McpServerIndexData}
      */
     @Override
     public McpServerIndexData getMcpServerByName(String namespaceId, String name) {
-        Page<McpServerIndexData> indexDataPage = searchMcpServerByName(namespaceId, name,
-                Constants.MCP_LIST_SEARCH_ACCURATE, 0, 1);
+        if (StringUtils.isEmpty(namespaceId)) {
+            return getFirstMcpServerByName(name);
+        }
+
+        Page<McpServerIndexData> indexDataPage = searchMcpServerByNameWithPage(namespaceId, name,
+                Constants.MCP_LIST_SEARCH_ACCURATE, 1, 1);
         if (CollectionUtils.isNotEmpty(indexDataPage.getPageItems())) {
             return indexDataPage.getPageItems().get(0);
         }
         return null;
     }
     
-    private List<String> fetchOrderedNamespaceList() {
-        return namespaceOperationService.getNamespaceList().stream()
-                .sorted(Comparator.comparing(Namespace::getNamespace)).map(Namespace::getNamespace).toList();
+    /**
+     * Remove cache entry by namespace ID and MCP server name. This is a no-op implementation since PlainMcpServerIndex
+     * doesn't use cache.
+     *
+     * @param namespaceId namespace ID
+     * @param mcpName     MCP server name
+     */
+    @Override
+    public void removeMcpServerByName(String namespaceId, String mcpName) {
+        // No-op implementation since PlainMcpServerIndex doesn't use cache
+    }
+    
+    /**
+     * Remove cache entry by MCP server ID. This is a no-op implementation since PlainMcpServerIndex doesn't use cache.
+     *
+     * @param mcpId MCP server ID
+     */
+    @Override
+    public void removeMcpServerById(String mcpId) {
+        // No-op implementation since PlainMcpServerIndex doesn't use cache
+    }
+
+    @Override
+    protected void afterSearch(List<McpServerIndexData> searchResult, String name) {
     }
 }

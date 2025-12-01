@@ -53,8 +53,9 @@ public class NotifyCenter {
     private static final AtomicBoolean CLOSED = new AtomicBoolean(false);
     
     private static final EventPublisherFactory DEFAULT_PUBLISHER_FACTORY;
-    
-    private static final NotifyCenter INSTANCE = new NotifyCenter();
+
+    @SuppressWarnings("checkstyle:StaticVariableName")
+    private static NotifyCenter INSTANCE = new NotifyCenter();
     
     private DefaultSharePublisher sharePublisher;
     
@@ -152,7 +153,7 @@ public class NotifyCenter {
     }
     
     /**
-     * Register a Subscriber. If the Publisher concerned by the Subscriber does not exist, then PublihserMap will
+     * Register a Subscriber. If the Publisher concerned by the Subscriber does not exist, then PublisherMap will
      * preempt a placeholder Publisher with default EventPublisherFactory first.
      *
      * @param consumer subscriber
@@ -162,7 +163,7 @@ public class NotifyCenter {
     }
     
     /**
-     * Register a Subscriber. If the Publisher concerned by the Subscriber does not exist, then PublihserMap will
+     * Register a Subscriber. If the Publisher concerned by the Subscriber does not exist, then PublisherMap will
      * preempt a placeholder Publisher with specified EventPublisherFactory first.
      *
      * @param consumer subscriber

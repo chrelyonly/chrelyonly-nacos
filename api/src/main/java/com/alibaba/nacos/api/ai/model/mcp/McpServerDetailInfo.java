@@ -29,11 +29,11 @@ public class McpServerDetailInfo extends McpServerBasicInfo {
     
     private List<McpEndpointInfo> backendEndpoints;
     
+    private List<McpEndpointInfo> frontendEndpoints;
+    
     private McpToolSpecification toolSpec;
     
     private List<ServerVersionDetail> allVersions;
-    
-    private String namespaceId;
     
     public List<McpEndpointInfo> getBackendEndpoints() {
         return backendEndpoints;
@@ -41,6 +41,14 @@ public class McpServerDetailInfo extends McpServerBasicInfo {
     
     public void setBackendEndpoints(List<McpEndpointInfo> backendEndpoints) {
         this.backendEndpoints = backendEndpoints;
+    }
+    
+    public List<McpEndpointInfo> getFrontendEndpoints() {
+        return frontendEndpoints;
+    }
+    
+    public void setFrontendEndpoints(List<McpEndpointInfo> frontendEndpoints) {
+        this.frontendEndpoints = frontendEndpoints;
     }
     
     public McpToolSpecification getToolSpec() {
@@ -57,13 +65,5 @@ public class McpServerDetailInfo extends McpServerBasicInfo {
 
     public void setAllVersions(List<ServerVersionDetail> allVersions) {
         this.allVersions = allVersions;
-    }
-
-    public String getNamespaceId() {
-        return namespaceId;
-    }
-
-    public void setNamespaceId(String namespaceId) {
-        this.namespaceId = namespaceId;
     }
 }
