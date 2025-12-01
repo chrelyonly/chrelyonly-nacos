@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="10 seconds">
+    <root level="off">
+        <appender-ref ref="rootFile"/>
+    </root>
+</configuration>
