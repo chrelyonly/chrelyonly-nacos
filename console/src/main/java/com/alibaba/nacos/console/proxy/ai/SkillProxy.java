@@ -16,11 +16,17 @@
 
 package com.alibaba.nacos.console.proxy.ai;
 
+import com.alibaba.nacos.ai.form.skills.admin.SkillDraftCreateForm;
+import com.alibaba.nacos.ai.form.skills.admin.SkillLabelsUpdateForm;
+import com.alibaba.nacos.ai.form.skills.admin.SkillOnlineForm;
+import com.alibaba.nacos.ai.form.skills.admin.SkillPublishForm;
 import com.alibaba.nacos.ai.form.skills.admin.SkillForm;
 import com.alibaba.nacos.ai.form.skills.admin.SkillListForm;
+import com.alibaba.nacos.ai.form.skills.admin.SkillSubmitForm;
+import com.alibaba.nacos.ai.form.skills.admin.SkillUpdateForm;
 import com.alibaba.nacos.console.handler.ai.SkillHandler;
-import com.alibaba.nacos.api.ai.model.skills.Skill;
-import com.alibaba.nacos.api.ai.model.skills.SkillBasicInfo;
+import com.alibaba.nacos.ai.model.skills.SkillAdminDetail;
+import com.alibaba.nacos.ai.model.skills.SkillAdminListItem;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.model.Page;
 import com.alibaba.nacos.core.model.form.PageForm;
@@ -40,7 +46,7 @@ public class SkillProxy {
         this.skillHandler = skillHandler;
     }
     
-    public Skill getSkill(SkillForm form) throws NacosException {
+    public SkillAdminDetail getSkill(SkillForm form) throws NacosException {
         return skillHandler.getSkill(form);
     }
     
@@ -48,11 +54,43 @@ public class SkillProxy {
         skillHandler.deleteSkill(form);
     }
     
-    public Page<SkillBasicInfo> listSkills(SkillListForm skillListForm, PageForm pageForm) throws NacosException {
+    public Page<SkillAdminListItem> listSkills(SkillListForm skillListForm, PageForm pageForm) throws NacosException {
         return skillHandler.listSkills(skillListForm, pageForm);
     }
     
     public String uploadSkillFromZip(String namespaceId, byte[] zipBytes) throws NacosException {
         return skillHandler.uploadSkillFromZip(namespaceId, zipBytes);
+    }
+
+    public String createDraft(SkillDraftCreateForm form) throws NacosException {
+        return skillHandler.createDraft(form);
+    }
+
+    public void updateDraft(SkillUpdateForm form) throws NacosException {
+        skillHandler.updateDraft(form);
+    }
+
+    public void deleteDraft(SkillForm form) throws NacosException {
+        skillHandler.deleteDraft(form);
+    }
+
+    public String submit(SkillSubmitForm form) throws NacosException {
+        return skillHandler.submit(form);
+    }
+
+    public void publish(SkillPublishForm form) throws NacosException {
+        skillHandler.publish(form);
+    }
+
+    public void updateLabels(SkillLabelsUpdateForm form) throws NacosException {
+        skillHandler.updateLabels(form);
+    }
+
+    public void online(SkillOnlineForm form) throws NacosException {
+        skillHandler.changeOnlineStatus(form, true);
+    }
+
+    public void offline(SkillOnlineForm form) throws NacosException {
+        skillHandler.changeOnlineStatus(form, false);
     }
 }
