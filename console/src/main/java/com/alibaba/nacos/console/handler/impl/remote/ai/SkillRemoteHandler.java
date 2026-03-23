@@ -20,14 +20,14 @@ import com.alibaba.nacos.ai.form.skills.admin.SkillDraftCreateForm;
 import com.alibaba.nacos.ai.form.skills.admin.SkillLabelsUpdateForm;
 import com.alibaba.nacos.ai.form.skills.admin.SkillOnlineForm;
 import com.alibaba.nacos.ai.form.skills.admin.SkillPublishForm;
+import com.alibaba.nacos.ai.form.skills.admin.SkillScopeForm;
 import com.alibaba.nacos.ai.form.skills.admin.SkillForm;
 import com.alibaba.nacos.ai.form.skills.admin.SkillListForm;
 import com.alibaba.nacos.ai.form.skills.admin.SkillSubmitForm;
 import com.alibaba.nacos.ai.form.skills.admin.SkillUpdateForm;
-import com.alibaba.nacos.ai.model.skills.SkillDetail;
-import com.alibaba.nacos.ai.model.skills.SkillListItem;
 import com.alibaba.nacos.api.ai.model.skills.Skill;
-import com.alibaba.nacos.api.ai.model.skills.SkillBasicInfo;
+import com.alibaba.nacos.api.ai.model.skills.SkillMeta;
+import com.alibaba.nacos.api.ai.model.skills.SkillSummary;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.model.Page;
 import com.alibaba.nacos.console.handler.ai.SkillHandler;
@@ -57,17 +57,19 @@ public class SkillRemoteHandler implements SkillHandler {
     }
 
     @Override
-    public SkillDetail getSkill(SkillForm form) throws NacosException {
-        // Remote maintainer client currently does not support full admin detail;
-        // return empty detail as placeholder.
-        return new SkillDetail();
+    public SkillMeta getSkill(SkillForm form) throws NacosException {
+        return clientHolder.getAiMaintainerService().getSkillMeta(
+                form.getNamespaceId(),
+                form.getSkillName()
+        );
     }
 
     @Override
     public Skill getSkillVersion(SkillForm form) throws NacosException {
-        return clientHolder.getAiMaintainerService().getSkillDetail(
+        return clientHolder.getAiMaintainerService().getSkillVersionDetail(
                 form.getNamespaceId(),
-                form.getSkillName()
+                form.getSkillName(),
+                form.getVersion()
         );
     }
 
@@ -85,32 +87,22 @@ public class SkillRemoteHandler implements SkillHandler {
     }
 
     @Override
-    public Page<SkillListItem> listSkills(SkillListForm skillListForm, PageForm pageForm) throws NacosException {
-        // Remote maintainer client returns Page<SkillBasicInfo>; convert to Page<SkillAdminListItem>
-        Page<SkillBasicInfo> source = clientHolder.getAiMaintainerService().listSkills(
+    public Page<SkillSummary> listSkills(SkillListForm skillListForm, PageForm pageForm) throws NacosException {
+        Page<SkillSummary> result = clientHolder.getAiMaintainerService().listSkills(
                 skillListForm.getNamespaceId(),
                 skillListForm.getSkillName(),
                 skillListForm.getSearch(),
                 pageForm.getPageNo(),
                 pageForm.getPageSize()
         );
-        Page<SkillListItem> result = new Page<>();
-        result.setTotalCount(source == null ? 0 : source.getTotalCount());
-        result.setPagesAvailable(source == null ? 0 : source.getPagesAvailable());
-        result.setPageNumber(pageForm.getPageNo());
-        java.util.List<SkillListItem> items = new java.util.ArrayList<>();
-        if (source != null && source.getPageItems() != null) {
-            for (SkillBasicInfo info : source.getPageItems()) {
-                if (info == null) {
-                    continue;
-                }
-                SkillListItem item = new SkillListItem();
-                item.setName(info.getName());
-                item.setDescription(info.getDescription());
-                items.add(item);
-            }
+        if (result == null) {
+            Page<SkillSummary> empty = new Page<>();
+            empty.setTotalCount(0);
+            empty.setPagesAvailable(0);
+            empty.setPageNumber(pageForm.getPageNo());
+            empty.setPageItems(new java.util.ArrayList<>());
+            return empty;
         }
-        result.setPageItems(items);
         return result;
     }
     
@@ -156,5 +148,10 @@ public class SkillRemoteHandler implements SkillHandler {
     public void changeOnlineStatus(SkillOnlineForm form, boolean online) throws NacosException {
         clientHolder.getAiMaintainerService().changeOnlineStatus(form.getNamespaceId(), form.getSkillName(),
                 form.getScope(), form.getVersion(), online);
+    }
+    
+    @Override
+    public void updateScope(SkillScopeForm form) throws NacosException {
+        clientHolder.getAiMaintainerService().updateScope(form.getNamespaceId(), form.getSkillName(), form.getScope());
     }
 }
