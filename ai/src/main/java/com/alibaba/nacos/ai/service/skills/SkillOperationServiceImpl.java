@@ -531,6 +531,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
         detail.setDescription(meta.getDesc());
         detail.setEnable(META_STATUS_ENABLE.equalsIgnoreCase(meta.getStatus()));
         detail.setBizTags(meta.getBizTags());
+        detail.setFrom(meta.getFrom());
         detail.setEditingVersion(versionInfo.getEditingVersion());
         detail.setReviewingVersion(versionInfo.getReviewingVersion());
         detail.setLabels(versionInfo.getLabels());
@@ -641,6 +642,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
             item.setDescription(meta.getDesc());
             item.setEnable(META_STATUS_ENABLE.equalsIgnoreCase(meta.getStatus()));
             item.setBizTags(meta.getBizTags());
+            item.setFrom(meta.getFrom());
             item.setScope(resolveScope(meta));
             item.setUpdateTime(meta.getGmtModified() == null ? null : meta.getGmtModified().getTime());
             item.setDownloadCount(meta.getDownloadCount());

@@ -40,6 +40,7 @@ final class AiResourceRowMappers {
         r.setNamespaceId(rs.getString("namespace_id"));
         r.setBizTags(rs.getString("biz_tags"));
         r.setExt(rs.getString("ext"));
+        r.setFrom(rs.getString("c_from"));
         r.setVersionInfo(rs.getString("version_info"));
         r.setMetaVersion(rs.getLong("meta_version"));
         r.setScope(rs.getString("scope"));

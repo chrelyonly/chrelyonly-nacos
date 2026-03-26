@@ -54,6 +54,7 @@ class AiResourceRowMappersTest {
         when(resultSet.getString("namespace_id")).thenReturn("public");
         when(resultSet.getString("biz_tags")).thenReturn("");
         when(resultSet.getString("ext")).thenReturn("{}");
+        when(resultSet.getString("c_from")).thenReturn("import");
         when(resultSet.getString("version_info")).thenReturn("{}");
         when(resultSet.getLong("meta_version")).thenReturn(1L);
         when(resultSet.getString("scope")).thenReturn("PUBLIC");
@@ -64,6 +65,7 @@ class AiResourceRowMappersTest {
         assertNotNull(resource);
         assertEquals(1L, resource.getId());
         assertEquals("test-skill", resource.getName());
+        assertEquals("import", resource.getFrom());
         assertEquals("PUBLIC", resource.getScope());
         assertEquals("alice", resource.getOwner());
     }
@@ -81,6 +83,7 @@ class AiResourceRowMappersTest {
         when(resultSet.getString("namespace_id")).thenReturn("");
         when(resultSet.getString("biz_tags")).thenReturn(null);
         when(resultSet.getString("ext")).thenReturn(null);
+        when(resultSet.getString("c_from")).thenReturn("local");
         when(resultSet.getString("version_info")).thenReturn(null);
         when(resultSet.getLong("meta_version")).thenReturn(1L);
         when(resultSet.getString("scope")).thenReturn("PRIVATE");
@@ -89,6 +92,7 @@ class AiResourceRowMappersTest {
         AiResource resource = AiResourceRowMappers.AI_RESOURCE_ROW_MAPPER.mapRow(resultSet, 0);
         
         assertNotNull(resource);
+        assertEquals("local", resource.getFrom());
         assertEquals("PRIVATE", resource.getScope());
         assertEquals("bob", resource.getOwner());
     }

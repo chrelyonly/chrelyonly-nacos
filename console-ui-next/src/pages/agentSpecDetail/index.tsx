@@ -932,6 +932,12 @@ export default function AgentSpecDetailPage() {
                     {dayjs(detail.updateTime).format('YYYY-MM-DD HH:mm')}
                   </span>
                 )}
+                {detail.from && (
+                  <span className="inline-flex items-center gap-1">
+                    <Tag className="h-3 w-3" />
+                    {t('common.from')}: {detail.from}
+                  </span>
+                )}
               </div>
 
               {/* Version lifecycle action buttons */}

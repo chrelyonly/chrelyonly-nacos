@@ -77,4 +77,11 @@ class AiResourceTest {
         assertEquals(VisibilityConstants.SCOPE_PUBLIC, resource.getScope());
         assertEquals("alice", resource.getOwner());
     }
+    
+    @Test
+    void testFromGetterSetter() {
+        AiResource resource = new AiResource();
+        resource.setFrom("sync");
+        assertEquals("sync", resource.getFrom());
+    }
 }

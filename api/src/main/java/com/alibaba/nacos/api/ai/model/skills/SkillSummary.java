@@ -37,6 +37,11 @@ public class SkillSummary extends SkillBasicInfo {
     private String bizTags;
     
     /**
+     * Source marker for IP attribution (e.g. local/import/sync).
+     */
+    private String from;
+    
+    /**
      * Visibility scope of skill metadata, e.g. PUBLIC or PRIVATE.
      */
     private String scope;
@@ -80,6 +85,14 @@ public class SkillSummary extends SkillBasicInfo {
     
     public void setBizTags(String bizTags) {
         this.bizTags = bizTags;
+    }
+    
+    public String getFrom() {
+        return from;
+    }
+    
+    public void setFrom(String from) {
+        this.from = from;
     }
     
     public String getScope() {

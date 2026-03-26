@@ -30,6 +30,8 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
     
     private String bizTags;
     
+    private String from;
+    
     private String scope;
     
     private Map<String, String> labels;
@@ -56,6 +58,14 @@ public class AgentSpecSummary extends AgentSpecBasicInfo {
     
     public void setBizTags(String bizTags) {
         this.bizTags = bizTags;
+    }
+    
+    public String getFrom() {
+        return from;
+    }
+    
+    public void setFrom(String from) {
+        this.from = from;
     }
     
     public String getScope() {

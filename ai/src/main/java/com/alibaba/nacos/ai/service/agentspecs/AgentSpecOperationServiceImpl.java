@@ -229,6 +229,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
         detail.setName(meta.getName());
         detail.setDescription(meta.getDesc());
         detail.setBizTags(meta.getBizTags());
+        detail.setFrom(meta.getFrom());
         detail.setEnable(META_STATUS_ENABLE.equalsIgnoreCase(meta.getStatus()));
         detail.setScope(resolveScope(meta));
         detail.setEditingVersion(versionInfo.getEditingVersion());
@@ -319,6 +320,7 @@ public class AgentSpecOperationServiceImpl implements AgentSpecOperationService 
                 item.setDescription(meta.getDesc());
                 item.setEnable(META_STATUS_ENABLE.equalsIgnoreCase(meta.getStatus()));
                 item.setBizTags(meta.getBizTags());
+                item.setFrom(meta.getFrom());
                 item.setScope(resolveScope(meta));
                 item.setUpdateTime(meta.getGmtModified() == null ? null : meta.getGmtModified().getTime());
                 item.setDownloadCount(meta.getDownloadCount());
