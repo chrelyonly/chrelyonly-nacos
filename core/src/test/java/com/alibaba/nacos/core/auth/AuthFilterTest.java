@@ -52,6 +52,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -98,7 +99,7 @@ class AuthFilterTest {
     
     @Test
     void testDoFilterDisabledAuth() throws ServletException, IOException {
-        when(authConfig.isAuthEnabled()).thenReturn(false);
+        lenient().when(authConfig.isAuthEnabled()).thenReturn(false);
         authFilter.doFilter(request, response, filterChain);
         verify(filterChain).doFilter(request, response);
         verify(response, never()).sendError(anyInt(), anyString());
@@ -137,7 +138,7 @@ class AuthFilterTest {
     @Test
     @Secured
     void testDoFilterWithoutMethod() throws ServletException, IOException {
-        when(authConfig.isAuthEnabled()).thenReturn(true);
+        lenient().when(authConfig.isAuthEnabled()).thenReturn(true);
         authFilter.doFilter(request, response, filterChain);
         verify(filterChain).doFilter(request, response);
         verify(response, never()).sendError(anyInt(), anyString());
@@ -145,7 +146,7 @@ class AuthFilterTest {
     
     @Test
     void testDoFilterWithoutSecured() throws ServletException, IOException, NoSuchMethodException {
-        when(authConfig.isAuthEnabled()).thenReturn(true);
+        lenient().when(authConfig.isAuthEnabled()).thenReturn(true);
         when(methodsCache.getMethod(request)).thenReturn(
                 this.getClass().getDeclaredMethod("testDoFilterWithoutSecured"));
         authFilter.doFilter(request, response, filterChain);

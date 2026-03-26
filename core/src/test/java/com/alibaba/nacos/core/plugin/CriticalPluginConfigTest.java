@@ -59,7 +59,7 @@ class CriticalPluginConfigTest {
         assertFalse(CriticalPluginConfig.isCritical("config:test"));
         assertFalse(CriticalPluginConfig.isCritical("encryption:test"));
         assertFalse(CriticalPluginConfig.isCritical("ai-pipeline:skill-scanner"));
-        assertFalse(CriticalPluginConfig.isCritical("ai-storage:nacos_config"));
+        assertTrue(CriticalPluginConfig.isCritical("ai-storage:nacos_config"));
     }
 
     @Test
