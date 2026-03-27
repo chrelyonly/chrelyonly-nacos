@@ -47,6 +47,8 @@ public class AiResource extends VisibilityResource {
     private String bizTags;
 
     private String ext;
+    
+    private String from;
 
     private String versionInfo;
 
@@ -143,6 +145,14 @@ public class AiResource extends VisibilityResource {
 
     public void setExt(String ext) {
         this.ext = ext;
+    }
+    
+    public String getFrom() {
+        return from;
+    }
+    
+    public void setFrom(String from) {
+        this.from = from;
     }
 
     public String getVersionInfo() {

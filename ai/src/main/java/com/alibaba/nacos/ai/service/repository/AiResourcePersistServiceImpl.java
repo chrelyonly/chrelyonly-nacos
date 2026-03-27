@@ -75,7 +75,7 @@ public class AiResourcePersistServiceImpl implements AiResourcePersistService {
     public long insert(AiResource resource) {
         AiResourceMapper mapper = mapperManager.findMapper(dataSourceService.getDataSourceType(), TableConstant.AI_RESOURCE);
         String sql = mapper.insert(Arrays.asList("name", "type", "c_desc", "status", "namespace_id", "biz_tags", "ext",
-                "version_info", "meta_version", "scope", "owner", "gmt_create@NOW()", "gmt_modified@NOW()"));
+                "c_from", "version_info", "meta_version", "scope", "owner", "gmt_create@NOW()", "gmt_modified@NOW()"));
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jt.update(connection -> {
@@ -87,10 +87,11 @@ public class AiResourcePersistServiceImpl implements AiResourcePersistService {
             ps.setString(5, normalizeNamespaceId(resource.getNamespaceId()));
             ps.setString(6, resource.getBizTags());
             ps.setString(7, resource.getExt());
-            ps.setString(8, resource.getVersionInfo());
-            ps.setLong(9, resource.getMetaVersion() == null ? 1L : resource.getMetaVersion());
-            ps.setString(10, resource.getScope() == null ? VisibilityConstants.SCOPE_PRIVATE : resource.getScope());
-            ps.setString(11, resource.getOwner() == null ? "" : resource.getOwner());
+            ps.setString(8, resource.getFrom() == null ? "local" : resource.getFrom());
+            ps.setString(9, resource.getVersionInfo());
+            ps.setLong(10, resource.getMetaVersion() == null ? 1L : resource.getMetaVersion());
+            ps.setString(11, resource.getScope() == null ? VisibilityConstants.SCOPE_PRIVATE : resource.getScope());
+            ps.setString(12, resource.getOwner() == null ? "" : resource.getOwner());
             return ps;
         }, keyHolder);
 
@@ -106,7 +107,7 @@ public class AiResourcePersistServiceImpl implements AiResourcePersistService {
         AiResourceMapper mapper = mapperManager.findMapper(dataSourceService.getDataSourceType(), TableConstant.AI_RESOURCE);
         String sql = mapper.select(
                 Arrays.asList("id", "gmt_create", "gmt_modified", "name", "type", "c_desc", "status", "namespace_id",
-                        "biz_tags", "ext", "version_info", "meta_version", "scope", "owner", "download_count"),
+                        "biz_tags", "ext", "c_from", "version_info", "meta_version", "scope", "owner", "download_count"),
                 Arrays.asList("namespace_id", "name", "type"));
         try {
             return jt.queryForObject(sql, new Object[] {normalizeNamespaceId(namespaceId), name, type},

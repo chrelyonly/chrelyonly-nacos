@@ -47,6 +47,7 @@ function makeItem(name: string): AgentSpecListItem {
     enable: true,
     scope: 'PUBLIC',
     bizTags: '[]',
+    from: 'local',
     labels: {},
     editingVersion: null,
     reviewingVersion: null,

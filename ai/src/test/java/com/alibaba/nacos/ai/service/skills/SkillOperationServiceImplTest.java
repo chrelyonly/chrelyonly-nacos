@@ -49,7 +49,6 @@ import com.alibaba.nacos.plugin.visibility.spi.VisibilityService;
 import com.alibaba.nacos.sys.env.EnvUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -644,7 +643,7 @@ class SkillOperationServiceImplTest {
         VisibilityService mockFilter = mock(VisibilityService.class);
         lenient().when(mockFilter.adviseQuery(anyString(), eq(VisibilityConstants.ACTION_READ), anyString(), any())).thenReturn(
                 advisor);
-        lenient().when(mockVisibilityManager.findVisibilityService("nacos-default-ai")).thenReturn(Optional.of(mockFilter));
+        lenient().when(mockVisibilityManager.findVisibilityService(anyString())).thenReturn(Optional.of(mockFilter));
         setupRequestContext("userB");
 
         Page<AiResource> metaPage = new Page<>();
@@ -660,7 +659,6 @@ class SkillOperationServiceImplTest {
     }
 
     @Test
-    @Disabled
     void testGetSkillDetailDeniedByReadFilter() {
         String namespaceId = "test-ns";
         String skillName = "private-skill";
@@ -675,7 +673,7 @@ class SkillOperationServiceImplTest {
         VisibilityService mockFilter = mock(VisibilityService.class);
         when(mockFilter.validateVisibility(anyString(), eq(VisibilityConstants.ACTION_READ), anyString(), any()))
                 .thenReturn(ValidationResult.deny("denied"));
-        when(mockVisibilityManager.findVisibilityService("nacos-default-ai")).thenReturn(Optional.of(mockFilter));
+        when(mockVisibilityManager.findVisibilityService(anyString())).thenReturn(Optional.of(mockFilter));
 
         setupRequestContext("otherUser");
         NacosApiException ex = assertThrows(NacosApiException.class,
@@ -684,7 +682,6 @@ class SkillOperationServiceImplTest {
     }
     
     @Test
-    @Disabled
     void testQuerySkillDeniedByReadFilterShouldReturnNotFound() {
         String namespaceId = "test-ns";
         String skillName = "private-skill";
@@ -699,7 +696,7 @@ class SkillOperationServiceImplTest {
         VisibilityService mockFilter = mock(VisibilityService.class);
         when(mockFilter.validateVisibility(anyString(), eq(VisibilityConstants.ACTION_READ), anyString(), any()))
                 .thenReturn(ValidationResult.deny("denied"));
-        when(mockVisibilityManager.findVisibilityService("nacos-default-ai")).thenReturn(Optional.of(mockFilter));
+        when(mockVisibilityManager.findVisibilityService(anyString())).thenReturn(Optional.of(mockFilter));
         
         setupRequestContext("otherUser");
         NacosApiException ex = assertThrows(NacosApiException.class,
@@ -709,7 +706,6 @@ class SkillOperationServiceImplTest {
     }
     
     @Test
-    @Disabled
     void testGetSkillVersionDetailDeniedByReadFilterShouldReturnNotFound() {
         String namespaceId = "test-ns";
         String skillName = "private-skill";
@@ -725,7 +721,7 @@ class SkillOperationServiceImplTest {
         VisibilityService mockFilter = mock(VisibilityService.class);
         when(mockFilter.validateVisibility(anyString(), eq(VisibilityConstants.ACTION_READ), anyString(), any()))
                 .thenReturn(ValidationResult.deny("denied"));
-        when(mockVisibilityManager.findVisibilityService("nacos-default-ai")).thenReturn(Optional.of(mockFilter));
+        when(mockVisibilityManager.findVisibilityService(anyString())).thenReturn(Optional.of(mockFilter));
         
         setupRequestContext("otherUser");
         NacosApiException ex = assertThrows(NacosApiException.class,
@@ -735,7 +731,6 @@ class SkillOperationServiceImplTest {
     }
 
     @Test
-    @Disabled
     void testDeleteSkillDeniedByWriteFilter() {
         String namespaceId = "test-ns";
         String skillName = "protected-skill";
@@ -750,7 +745,7 @@ class SkillOperationServiceImplTest {
         VisibilityService mockFilter = mock(VisibilityService.class);
         when(mockFilter.validateVisibility(anyString(), eq(VisibilityConstants.ACTION_WRITE), anyString(), any()))
                 .thenReturn(ValidationResult.deny("denied"));
-        when(mockVisibilityManager.findVisibilityService("nacos-default-ai")).thenReturn(Optional.of(mockFilter));
+        when(mockVisibilityManager.findVisibilityService(anyString())).thenReturn(Optional.of(mockFilter));
 
         setupRequestContext("attackerUser");
         NacosApiException ex = assertThrows(NacosApiException.class,
@@ -791,7 +786,6 @@ class SkillOperationServiceImplTest {
     }
 
     @Test
-    @Disabled
     void testCreateDraftOnExistingSkillDeniedByWriteFilter() {
         String namespaceId = "test-ns";
         String skillName = "protected-skill";
@@ -808,7 +802,7 @@ class SkillOperationServiceImplTest {
         VisibilityService mockFilter = mock(VisibilityService.class);
         when(mockFilter.validateVisibility(anyString(), eq(VisibilityConstants.ACTION_WRITE), anyString(), any()))
                 .thenReturn(ValidationResult.deny("denied"));
-        when(mockVisibilityManager.findVisibilityService("nacos-default-ai")).thenReturn(Optional.of(mockFilter));
+        when(mockVisibilityManager.findVisibilityService(anyString())).thenReturn(Optional.of(mockFilter));
 
         setupRequestContext("attackerUser");
         NacosApiException ex = assertThrows(NacosApiException.class,
@@ -1008,7 +1002,6 @@ class SkillOperationServiceImplTest {
     }
 
     @Test
-    @Disabled
     void testUpdateScopeDeniedByWriteFilter() {
         String namespaceId = "test-ns";
         String skillName = "protected-skill";
@@ -1023,7 +1016,7 @@ class SkillOperationServiceImplTest {
         VisibilityService mockFilter = mock(VisibilityService.class);
         when(mockFilter.validateVisibility(anyString(), eq(VisibilityConstants.ACTION_WRITE), anyString(), any()))
                 .thenReturn(ValidationResult.deny("denied"));
-        when(mockVisibilityManager.findVisibilityService("nacos-default-ai")).thenReturn(Optional.of(mockFilter));
+        when(mockVisibilityManager.findVisibilityService(anyString())).thenReturn(Optional.of(mockFilter));
 
         setupRequestContext("attackerUser");
         NacosApiException ex = assertThrows(NacosApiException.class,

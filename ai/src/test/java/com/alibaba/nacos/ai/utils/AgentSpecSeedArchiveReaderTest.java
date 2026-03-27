@@ -17,8 +17,8 @@
 package com.alibaba.nacos.ai.utils;
 
 import com.alibaba.nacos.api.ai.model.agentspecs.AgentSpec;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assumptions;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.ByteArrayInputStream;
@@ -51,6 +51,7 @@ class AgentSpecSeedArchiveReaderTest {
 
         assertEquals(1, actual.size());
         assertEquals("演示坐席", actual.get(0).getAgentSpecName());
+        assertEquals("vendor", actual.get(0).getFrom());
 
         AgentSpec spec = AgentSpecZipParser.parseAgentSpecFromZip(actual.get(0).getZipBytes(), "public");
         assertEquals("演示坐席", spec.getName());
@@ -74,9 +75,19 @@ class AgentSpecSeedArchiveReaderTest {
     }
 
     @Test
-    @Disabled
+    void shouldParseNestedFromPath() throws Exception {
+        String manifest = "{\"version\":\"1.0\",\"worker\":{\"suggested_name\":\"find-agentspec\"}}";
+        byte[] archive = buildArchive(new ArchiveEntry("github.com/nacos/find-agentspec/manifest.json", manifest));
+        List<AgentSpecSeedArchiveReader.AgentSpecPackage> actual =
+                AgentSpecSeedArchiveReader.read(new ByteArrayInputStream(archive));
+        assertEquals(1, actual.size());
+        assertEquals("github.com/nacos", actual.get(0).getFrom());
+    }
+
+    @Test
     void shouldParseBundledAgentspecArchive() throws Exception {
         ClassPathResource resource = new ClassPathResource("bootstrap/agentspec-data.zip");
+        Assumptions.assumeTrue(resource.exists(), "bootstrap/agentspec-data.zip is not bundled in this test runtime");
         try (InputStream inputStream = resource.getInputStream()) {
             List<AgentSpecSeedArchiveReader.AgentSpecPackage> actual = AgentSpecSeedArchiveReader.read(inputStream);
 

@@ -424,6 +424,7 @@ CREATE TABLE "ai_resource" (
   "namespace_id" varchar(128) NOT NULL DEFAULT '',
   "biz_tags" varchar(1024),
   "ext" text,
+  "c_from" varchar(256) NOT NULL DEFAULT 'local',
   "version_info" text,
   "meta_version" bigint NOT NULL DEFAULT 1,
   "scope" varchar(16) NOT NULL DEFAULT 'PRIVATE',
@@ -442,6 +443,7 @@ COMMENT ON COLUMN "ai_resource"."status" IS '资源状态';
 COMMENT ON COLUMN "ai_resource"."namespace_id" IS '命名空间ID';
 COMMENT ON COLUMN "ai_resource"."biz_tags" IS '业务标签';
 COMMENT ON COLUMN "ai_resource"."ext" IS '扩展信息(JSON)';
+COMMENT ON COLUMN "ai_resource"."c_from" IS '来源标识(导入/同步来源)';
 COMMENT ON COLUMN "ai_resource"."version_info" IS '版本信息(JSON)';
 COMMENT ON COLUMN "ai_resource"."meta_version" IS '元数据版本(乐观锁)';
 COMMENT ON COLUMN "ai_resource"."scope" IS '可见性: PUBLIC/PRIVATE';
@@ -460,7 +462,8 @@ ALTER TABLE "ai_resource" ADD CONSTRAINT "ai_resource_pkey" PRIMARY KEY ("id");
 CREATE UNIQUE INDEX "uk_ai_resource_ns_name_type" ON "ai_resource" USING btree (
   "namespace_id",
   "name",
-  "type"
+  "type",
+  "c_from"
 );
 CREATE INDEX "idx_ai_resource_name" ON "ai_resource" USING btree ("name");
 CREATE INDEX "idx_ai_resource_type" ON "ai_resource" USING btree ("type");

@@ -24,7 +24,6 @@ import net.jqwik.api.Combinators;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
-import org.junit.jupiter.api.Disabled;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -52,7 +51,6 @@ class AgentSpecStorageKeyPropertyTest {
      * and parsing it SHALL produce a group equal to {@code agentspec__{name}__{version}}.</p>
      */
     @Property(tries = 50)
-    @Disabled
     void agentSpecGroupFollowsNamingConvention(
             @ForAll("validNamespaceIds") String namespaceId,
             @ForAll("validNames") String name,
@@ -63,7 +61,7 @@ class AgentSpecStorageKeyPropertyTest {
                 name, version, AgentSpecUtils.AGENTSPEC_MAIN_DATA_ID);
         NacosConfigAiResourceStorage.KeyParts parts = NacosConfigAiResourceStorage.parse(key);
 
-        String expectedGroup = AgentSpecUtils.AGENTSPEC_GROUP_PREFIX + name + "__" + version;
+        String expectedGroup = AgentSpecUtils.buildAgentSpecVersionGroup(name, version);
         assertEquals(expectedGroup, parts.group(),
                 "Group must follow agentspec__{name}__{version} format");
         assertTrue(parts.group().startsWith(AgentSpecUtils.AGENTSPEC_GROUP_PREFIX),

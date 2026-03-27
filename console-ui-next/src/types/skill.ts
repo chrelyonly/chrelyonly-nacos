@@ -13,6 +13,7 @@ export interface SkillListItem {
   enable: boolean;
   scope: string; // "PUBLIC" or "PRIVATE"
   bizTags: string; // JSON string: ["tag1","tag2"]
+  from: string;
   labels: Record<string, string>; // e.g. {"latest":"v3","stable":"v2"}
   editingVersion: string | null;
   reviewingVersion: string | null;
@@ -55,6 +56,7 @@ export interface SkillAdminDetail {
   enable: boolean;
   scope: string; // "PUBLIC" or "PRIVATE"
   bizTags: string; // JSON string: ["tag1","tag2"]
+  from: string;
   editingVersion: string | null;
   reviewingVersion: string | null;
   labels: Record<string, string>;

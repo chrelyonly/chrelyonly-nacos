@@ -111,7 +111,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
 
     private static final String VERSION_STATUS_ONLINE = "online";
 
-    private static final String DEFAULT_AUTHOR = "nacos";
+    private static final String DEFAULT_AUTHOR = "-";
 
     private static final String VERSION_STATUS_DRAFT = "draft";
 
@@ -198,6 +198,11 @@ public class SkillOperationServiceImpl implements SkillOperationService {
 
     @Override
     public void bootstrapSkillFromZip(String namespaceId, byte[] zipBytes) throws NacosException {
+        bootstrapSkillFromZip(namespaceId, zipBytes, null);
+    }
+
+    @Override
+    public void bootstrapSkillFromZip(String namespaceId, byte[] zipBytes, String from) throws NacosException {
         Skill skill = SkillZipParser.parseSkillFromZip(zipBytes, namespaceId);
         if (skill == null || StringUtils.isBlank(skill.getName())) {
             throw new NacosApiException(NacosException.INVALID_PARAM, ErrorCode.PARAMETER_MISSING, "Skill name is required");
@@ -236,6 +241,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
         meta.setStatus(META_STATUS_ENABLE);
         meta.setDesc(skill.getDescription());
         meta.setOwner(DEFAULT_AUTHOR);
+        meta.setFrom(from);
         meta.setScope(VisibilityConstants.SCOPE_PUBLIC);
         meta.setVersionInfo(JacksonUtils.toJson(versionInfo));
         meta.setMetaVersion(1L);
@@ -531,6 +537,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
         detail.setDescription(meta.getDesc());
         detail.setEnable(META_STATUS_ENABLE.equalsIgnoreCase(meta.getStatus()));
         detail.setBizTags(meta.getBizTags());
+        detail.setFrom(meta.getFrom());
         detail.setEditingVersion(versionInfo.getEditingVersion());
         detail.setReviewingVersion(versionInfo.getReviewingVersion());
         detail.setLabels(versionInfo.getLabels());
@@ -641,6 +648,7 @@ public class SkillOperationServiceImpl implements SkillOperationService {
             item.setDescription(meta.getDesc());
             item.setEnable(META_STATUS_ENABLE.equalsIgnoreCase(meta.getStatus()));
             item.setBizTags(meta.getBizTags());
+            item.setFrom(meta.getFrom());
             item.setScope(resolveScope(meta));
             item.setUpdateTime(meta.getGmtModified() == null ? null : meta.getGmtModified().getTime());
             item.setDownloadCount(meta.getDownloadCount());

@@ -23,14 +23,15 @@ import com.alibaba.nacos.ai.pipeline.repository.PipelineExecutionRepository;
 import com.alibaba.nacos.ai.service.repository.AiResourcePersistService;
 import com.alibaba.nacos.ai.service.repository.AiResourceVersionPersistService;
 import com.alibaba.nacos.plugin.ai.pipeline.model.PublishPipelineContext;
+import com.alibaba.nacos.sys.env.EnvUtil;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
-import net.jqwik.api.Disabled;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
 import org.mockito.ArgumentCaptor;
+import org.springframework.core.env.StandardEnvironment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,7 +54,6 @@ import static org.mockito.Mockito.when;
  * @author kiro
  * @since 3.2.0
  */
-@Disabled
 class AgentSpecSubmitPipelineAvailabilityPropertyTest {
 
     private static final String RESOURCE_TYPE_AGENTSPEC = "agentspec";
@@ -67,6 +67,7 @@ class AgentSpecSubmitPipelineAvailabilityPropertyTest {
     @Property(tries = 50)
     void submitDirectlyPublishesWhenPipelineDisabled(
             @ForAll("submitInputs") SubmitInput input) throws Exception {
+        EnvUtil.setEnvironment(new StandardEnvironment());
 
         // Mock dependencies
         final AiResourcePersistService aiResourcePersistService = mock(AiResourcePersistService.class);
@@ -128,6 +129,7 @@ class AgentSpecSubmitPipelineAvailabilityPropertyTest {
     @Property(tries = 50)
     void submitSetsReviewingWhenPipelineEnabled(
             @ForAll("submitWithPipelineInputs") SubmitWithPipelineInput input) throws Exception {
+        EnvUtil.setEnvironment(new StandardEnvironment());
 
         // Mock dependencies
         final AiResourcePersistService aiResourcePersistService = mock(AiResourcePersistService.class);

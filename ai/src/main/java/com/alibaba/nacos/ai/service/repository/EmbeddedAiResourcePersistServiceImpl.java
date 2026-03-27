@@ -69,11 +69,12 @@ public class EmbeddedAiResourcePersistServiceImpl implements AiResourcePersistSe
     public long insert(AiResource resource) {
         AiResourceMapper mapper = mapperManager.findMapper(dataSourceService.getDataSourceType(), TableConstant.AI_RESOURCE);
         String sql = mapper.insert(Arrays.asList("name", "type", "c_desc", "status", "namespace_id", "biz_tags", "ext",
-                "version_info", "meta_version", "scope", "owner", "gmt_create@NOW()", "gmt_modified@NOW()"));
+                "c_from", "version_info", "meta_version", "scope", "owner", "gmt_create@NOW()", "gmt_modified@NOW()"));
 
         Object[] args = new Object[] {resource.getName(), resource.getType(), resource.getDesc(), resource.getStatus(),
                 normalizeNamespaceId(resource.getNamespaceId()), resource.getBizTags(), resource.getExt(),
-                resource.getVersionInfo(), resource.getMetaVersion() == null ? 1L : resource.getMetaVersion(),
+                resource.getFrom() == null ? "local" : resource.getFrom(), resource.getVersionInfo(),
+                resource.getMetaVersion() == null ? 1L : resource.getMetaVersion(),
                 resource.getScope() == null ? VisibilityConstants.SCOPE_PRIVATE : resource.getScope(),
                 resource.getOwner() == null ? "" : resource.getOwner()};
 
@@ -95,7 +96,7 @@ public class EmbeddedAiResourcePersistServiceImpl implements AiResourcePersistSe
         AiResourceMapper mapper = mapperManager.findMapper(dataSourceService.getDataSourceType(), TableConstant.AI_RESOURCE);
         String sql = mapper.select(
                 Arrays.asList("id", "gmt_create", "gmt_modified", "name", "type", "c_desc", "status", "namespace_id",
-                        "biz_tags", "ext", "version_info", "meta_version", "scope", "owner", "download_count"),
+                        "biz_tags", "ext", "c_from", "version_info", "meta_version", "scope", "owner", "download_count"),
                 Arrays.asList("namespace_id", "name", "type"));
         return databaseOperate.queryOne(sql, new Object[] {normalizeNamespaceId(namespaceId), name, type},
                 AiResourceRowMappers.AI_RESOURCE_ROW_MAPPER);

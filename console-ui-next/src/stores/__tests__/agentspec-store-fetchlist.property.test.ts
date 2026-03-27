@@ -44,6 +44,7 @@ const arbListItem: fc.Arbitrary<AgentSpecListItem> = fc.record({
   enable: fc.boolean(),
   scope: fc.constantFrom('PUBLIC', 'PRIVATE'),
   bizTags: fc.constant('[]'),
+  from: fc.constantFrom('local', 'import', 'sync'),
   labels: fc.constant({}),
   editingVersion: fc.option(fc.string({ minLength: 1, maxLength: 10 }), { nil: null }),
   reviewingVersion: fc.option(fc.string({ minLength: 1, maxLength: 10 }), { nil: null }),

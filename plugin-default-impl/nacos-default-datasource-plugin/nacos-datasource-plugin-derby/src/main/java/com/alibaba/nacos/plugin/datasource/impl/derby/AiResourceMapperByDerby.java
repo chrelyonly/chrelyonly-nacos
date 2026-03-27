@@ -36,7 +36,7 @@ public class AiResourceMapperByDerby extends AbstractMapperByDerby implements Ai
     public MapperResult findAiResourceFetchRows(MapperContext context) {
         WhereBuilder where = new WhereBuilder(
                 "SELECT id,gmt_create,gmt_modified,name,type,c_desc,status,namespace_id,"
-                        + "biz_tags,ext,version_info,meta_version,scope,owner,download_count "
+                        + "biz_tags,ext,c_from,version_info,meta_version,scope,owner,download_count "
                         + "FROM ai_resource");
         where.eq("namespace_id", context.getWhereParameter(FieldConstant.NAMESPACE_ID));
 
