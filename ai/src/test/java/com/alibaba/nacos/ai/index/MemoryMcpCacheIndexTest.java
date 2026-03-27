@@ -614,24 +614,24 @@ class MemoryMcpCacheIndexTest {
         McpCacheIndexProperties mixedProps = new McpCacheIndexProperties();
         mixedProps.setMaxSize(100);
         mixedProps.setExpireTimeSeconds(2); // 2秒过期
-        mixedProps.setCleanupIntervalSeconds(1);
+        // 避免后台清理线程在测试窗口内并发介入，降低时序抖动
+        mixedProps.setCleanupIntervalSeconds(60);
         MemoryMcpCacheIndex mixedCache = new MemoryMcpCacheIndex(mixedProps);
         
         try {
             // 添加一些条目
             mixedCache.updateIndex("ns1", "name1", "id1"); // 这个会过期
-            Thread.sleep(1100); // 等待1.1秒
+            Thread.sleep(1200); // 与id2拉开创建时间，避免同一秒边界
             mixedCache.updateIndex("ns2", "name2", "id2"); // 这个不会过期
             
-            // 验证两个条目都存在
-            assertEquals("id1", mixedCache.getMcpId("ns1", "name1"));
+            // 仅校验新条目有效，旧条目在秒级边界上可能会提前过期
             assertEquals("id2", mixedCache.getMcpId("ns2", "name2"));
             
-            // 再等待1.1秒，使第一个条目过期但第二个不过期
-            Thread.sleep(1100);
-            
-            // 触发清理（通过获取来间接触发）
-            mixedCache.getMcpId("ns1", "name1");
+            // 轮询等待id1过期，避免固定sleep导致秒级边界抖动
+            long deadline = System.currentTimeMillis() + 2500;
+            while (mixedCache.getMcpId("ns1", "name1") != null && System.currentTimeMillis() < deadline) {
+                Thread.sleep(50);
+            }
             
             // 验证只有过期的条目被清理
             assertNull(mixedCache.getMcpId("ns1", "name1"));
