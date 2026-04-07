@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -35,6 +36,8 @@ class VisibilityPluginManagerTest {
     
     private static final String TEST_SERVICE_NAME = "test-visibility";
     
+    private static final String VISIBILITY_ENABLED_KEY = "nacos.plugin.visibility.enabled";
+    
     private VisibilityPluginManager manager;
     
     @Mock
@@ -42,11 +45,12 @@ class VisibilityPluginManagerTest {
     
     @BeforeEach
     void setUp() throws NoSuchFieldException, IllegalAccessException {
+        System.clearProperty(VISIBILITY_ENABLED_KEY);
         manager = VisibilityPluginManager.getInstance();
         Field field = VisibilityPluginManager.class.getDeclaredField("visibilityServiceMap");
         field.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        Map<String, VisibilityService> serviceMap = (Map<String, VisibilityService>) field.get(manager);
+        @SuppressWarnings("unchecked") Map<String, VisibilityService> serviceMap = (Map<String, VisibilityService>) field.get(
+                manager);
         serviceMap.put(TEST_SERVICE_NAME, mockVisibilityService);
     }
     
@@ -60,5 +64,13 @@ class VisibilityPluginManagerTest {
         Optional<VisibilityService> result = manager.findVisibilityService(TEST_SERVICE_NAME);
         assertTrue(result.isPresent());
         assertEquals(mockVisibilityService, result.get());
+    }
+    
+    @Test
+    void testFindVisibilityServiceWhenVisibilityPluginDisabled() {
+        System.setProperty(VISIBILITY_ENABLED_KEY, "false");
+        Optional<VisibilityService> result = manager.findVisibilityService(TEST_SERVICE_NAME);
+        assertFalse(result.isPresent());
+        System.clearProperty(VISIBILITY_ENABLED_KEY);
     }
 }
