@@ -2,7 +2,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Trash2, Search, X, ChevronLeft, ChevronRight, Wand2, Upload, Plus } from 'lucide-react';
+import { Trash2, Search, X, ChevronLeft, ChevronRight, Wand2, Upload, Plus, Tag } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,7 @@ export default function SkillManagementPage() {
     orderBy,
     filterOwner,
     filterScope,
+    filterBizTag,
     selectedNames,
     error,
     fetchList,
@@ -56,6 +57,7 @@ export default function SkillManagementPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [searchInput, setSearchInput] = useState(searchName);
   const [ownerInput, setOwnerInput] = useState(filterOwner);
+  const [bizTagInput, setBizTagInput] = useState(filterBizTag);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -73,6 +75,7 @@ export default function SkillManagementPage() {
     setSearchParams({
       searchName: searchInput,
       filterOwner: globalAdmin ? ownerInput : (ownerInput ? username || '' : ''),
+      filterBizTag: bizTagInput,
     });
     fetchList(namespaceId);
   };
@@ -80,6 +83,7 @@ export default function SkillManagementPage() {
   const handleReset = () => {
     setSearchInput('');
     setOwnerInput('');
+    setBizTagInput('');
     resetSearch();
     fetchList(namespaceId);
   };
@@ -146,10 +150,10 @@ export default function SkillManagementPage() {
         </div>
       </div>
 
-      {/* Search & filters bar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[220px] max-w-md">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+      {/* Search & filters (single row; py gives room so focus rings are not clipped by overflow-x-auto) */}
+      <div className="flex w-full min-w-0 items-center gap-2 overflow-x-auto px-0.5 py-2">
+        <div className="relative min-w-[12rem] flex-1 max-w-md">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             placeholder={t('skill.searchPlaceholder')}
             value={searchInput}
@@ -158,31 +162,30 @@ export default function SkillManagementPage() {
             className="pl-8 h-8 text-sm"
           />
         </div>
-        <Button size="sm" variant="secondary" className="h-8" onClick={handleSearch}>
-          {t('common.search')}
-        </Button>
-        {(searchInput || filterOwner || filterScope) && (
-          <Button size="sm" variant="ghost" className="h-8" onClick={handleReset}>
-            <X className="mr-1 h-3 w-3" />
-            {t('common.reset')}
-          </Button>
-        )}
-
-        {/* Owner filter: admin gets free-text input; non-admin gets "only mine" toggle */}
+        <div className="relative w-[10.5rem] shrink-0">
+          <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder={t('skill.filterBizTagPlaceholder')}
+            value={bizTagInput}
+            onChange={(e) => setBizTagInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            className="pl-8 h-8 text-sm"
+          />
+        </div>
         {globalAdmin ? (
           <Input
             placeholder={t('skill.filterOwnerPlaceholder')}
             value={ownerInput}
             onChange={(e) => setOwnerInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="w-[160px] h-8 text-xs"
+            className="w-[9rem] shrink-0 h-8 text-xs"
             title={t('skill.filterByOwner')}
           />
         ) : (
           <Button
             size="sm"
             variant={filterOwner ? 'default' : 'outline'}
-            className="h-8 text-xs"
+            className="h-8 text-xs shrink-0 whitespace-nowrap"
             onClick={() => {
               const next = filterOwner ? '' : (username || '');
               setSearchParams({ filterOwner: next });
@@ -192,8 +195,15 @@ export default function SkillManagementPage() {
             {t('skill.filterOnlyMine')}
           </Button>
         )}
-
-        {/* Scope filter: everyone can choose all / public / private */}
+        <Button size="sm" variant="secondary" className="h-8 shrink-0" onClick={handleSearch}>
+          {t('common.search')}
+        </Button>
+        {(searchInput || filterOwner || filterScope || filterBizTag) && (
+          <Button size="sm" variant="ghost" className="h-8 shrink-0" onClick={handleReset}>
+            <X className="mr-1 h-3 w-3" />
+            {t('common.reset')}
+          </Button>
+        )}
         <Select
           value={filterScope || ''}
           onValueChange={(v) => {
@@ -201,7 +211,7 @@ export default function SkillManagementPage() {
             fetchList(namespaceId);
           }}
         >
-          <SelectTrigger className="w-[130px] h-8 text-xs">
+          <SelectTrigger className="w-[7.5rem] h-8 text-xs shrink-0">
             <SelectValue placeholder={t('skill.filterScopeAll')} />
           </SelectTrigger>
           <SelectContent>
@@ -210,8 +220,6 @@ export default function SkillManagementPage() {
             <SelectItem value="PRIVATE">{t('skill.filterScopePrivate')}</SelectItem>
           </SelectContent>
         </Select>
-
-        {/* Sort */}
         <Select
           value={orderBy}
           onValueChange={(v) => {
@@ -219,7 +227,7 @@ export default function SkillManagementPage() {
             fetchList(namespaceId);
           }}
         >
-          <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectTrigger className="w-[8.5rem] h-8 text-xs shrink-0">
             <SelectValue placeholder={t('skill.sortDefault')} />
           </SelectTrigger>
           <SelectContent>
@@ -227,23 +235,21 @@ export default function SkillManagementPage() {
             <SelectItem value="download_count">{t('skill.sortByDownloads')}</SelectItem>
           </SelectContent>
         </Select>
-
-        {/* Batch operations */}
         {selectedNames.size > 0 && (
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 shrink-0 ml-auto pl-2 border-l border-border/60">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
               {t('config.selectedCount', { count: selectedNames.size })}
             </span>
             <Button
               variant="destructive"
               size="sm"
-              className="h-8"
+              className="h-8 shrink-0"
               onClick={() => setBatchDeleteOpen(true)}
             >
               <Trash2 className="mr-1 h-3 w-3" />
               {t('skill.batchDelete')}
             </Button>
-            <Button variant="ghost" size="sm" className="h-8" onClick={clearSelection}>
+            <Button variant="ghost" size="sm" className="h-8 shrink-0" onClick={clearSelection}>
               {t('common.cancel')}
             </Button>
           </div>
