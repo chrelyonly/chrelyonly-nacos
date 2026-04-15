@@ -32,6 +32,8 @@ import {
 import MonacoEditor from '../../../components/MonacoEditor/MonacoEditor';
 import PromptOptimizeDialog from '../PromptOptimizeDialog';
 import { getParams, request } from '@/globalLib';
+import { COPILOT_ENABLED } from '@/constants';
+import { fetchPipelineExecutionDetail, mapExecutionToPipelineInfo } from '@/utils/pipelineApi';
 import './PromptDetail.scss';
 
 @ConfigProvider.config
@@ -203,18 +205,25 @@ class PromptDetail extends React.Component {
             }
           }
 
-          this.setState({
-            versionContent: versionData,
-            template,
-            variables: this.extractVariables(template),
-            serverVariables: svrVars,
-            variableValues: initialVarValues,
-            selectedVersion: version,
-            selectedVersionStatus: versionSummary?.status || versionData.status || null,
-            pipelineInfo,
-            isEditingDraft: false,
-            editCommitMsg: versionData.commitMsg || '',
-          });
+          this.setState(
+            {
+              versionContent: versionData,
+              template,
+              variables: this.extractVariables(template),
+              serverVariables: svrVars,
+              variableValues: initialVarValues,
+              selectedVersion: version,
+              selectedVersionStatus: versionSummary?.status || versionData.status || null,
+              pipelineInfo,
+              isEditingDraft: false,
+              editCommitMsg: versionData.commitMsg || '',
+            },
+            () => {
+              if (pipelineInfo && pipelineInfo.executionId) {
+                this.syncPipelineExecutionFromConsole(pipelineInfo.executionId);
+              }
+            }
+          );
         } else {
           Message.error(data?.message || locale.getPromptFailed || 'Failed to get version content');
         }
@@ -222,6 +231,28 @@ class PromptDetail extends React.Component {
       error: () => {
         this.setState({ versionLoading: false });
         Message.error(locale.getPromptFailed || 'Failed to get version content');
+      },
+    });
+  };
+
+  /**
+   * Refreshes pipeline status/nodes from Console pipeline API (GET .../pipelines/detail).
+   */
+  syncPipelineExecutionFromConsole = executionId => {
+    if (!executionId) {
+      return;
+    }
+    fetchPipelineExecutionDetail(executionId, {
+      success: data => {
+        if (data && (data.code === 0 || data.code === 200) && data.data) {
+          const merged = mapExecutionToPipelineInfo(data.data);
+          if (merged) {
+            this.setState({ pipelineInfo: merged });
+          }
+        }
+      },
+      error: () => {
+        // Keep governance snapshot on failure (e.g. older server without /detail).
       },
     });
   };
@@ -365,7 +396,7 @@ class PromptDetail extends React.Component {
   // ===== BizTags Editor =====
 
   handleEditBizTags = () => {
-    const bizTags = this.state.governanceData?.bizTags;
+    const bizTags = this.state.governanceData?.bizTagsStr;
     let parsed = [];
     if (bizTags) {
       try {
@@ -397,14 +428,13 @@ class PromptDetail extends React.Component {
       .split(',')
       .map(s => s.trim())
       .filter(Boolean);
-    const bizTagsJson = JSON.stringify(tags);
 
     this.setState({ savingBizTags: true });
 
     request({
       method: 'PUT',
       url: 'v3/console/ai/prompt/biz-tags',
-      data: { promptKey, bizTags: bizTagsJson, namespaceId },
+      data: { promptKey, bizTags: tags.join(','), namespaceId },
       contentType: 'application/x-www-form-urlencoded',
       success: data => {
         this.setState({ savingBizTags: false });
@@ -1164,7 +1194,7 @@ class PromptDetail extends React.Component {
     const reviewingVersionStr = governanceData?.reviewingVersion || null;
     const description = governanceData?.description || '';
     const bizTags = (() => {
-      const raw = governanceData?.bizTags;
+      const raw = governanceData?.bizTagsStr;
       if (!raw) return [];
       try {
         const parsed = JSON.parse(raw);
@@ -1260,9 +1290,11 @@ class PromptDetail extends React.Component {
                 <Button onClick={this.handleCancelEditDraft}>
                   {locale.cancelEdit || 'Cancel'}
                 </Button>
-                <Button onClick={this.handleOpenOptimizeDialog} disabled={!template}>
-                  {locale.aiOptimize || 'AI Optimize'}
-                </Button>
+                {localStorage.getItem(COPILOT_ENABLED) === 'true' && (
+                  <Button onClick={this.handleOpenOptimizeDialog} disabled={!template}>
+                    {locale.aiOptimize || 'AI Optimize'}
+                  </Button>
+                )}
               </>
             )}
             {isReviewing && (
@@ -1426,7 +1458,7 @@ class PromptDetail extends React.Component {
         </div>
 
         {/* Pipeline Status */}
-        {isReviewing && pipelineInfo && (
+        {pipelineInfo && (
           <div className="pipeline-section">
             <span className="meta-label">{locale.pipelineStatus || 'Pipeline'}:</span>
             <Tag
@@ -1576,146 +1608,149 @@ class PromptDetail extends React.Component {
             </div>
 
             {/* Right: Debug Panel */}
-            <div className="detail-right">
-              <div className="debug-card">
-                <div className="debug-title">
-                  <Icon type="bug" style={{ marginRight: 8 }} />
-                  {locale.debugPanel || 'Prompt 调试'}
-                </div>
+            {localStorage.getItem(COPILOT_ENABLED) === 'true' && (
+              <div className="detail-right">
+                <div className="debug-card">
+                  <div className="debug-title">
+                    <Icon type="bug" style={{ marginRight: 8 }} />
+                    {locale.debugPanel || 'Prompt 调试'}
+                  </div>
 
-                <div className="debug-input-section">
-                  {/* Variable Inputs */}
-                  {variables.length > 0 && (
-                    <div className="variable-inputs">
+                  <div className="debug-input-section">
+                    {/* Variable Inputs */}
+                    {variables.length > 0 && (
+                      <div className="variable-inputs">
+                        <div className="section-subtitle">
+                          {locale.templateVariables || '模板参数'}
+                          <span className="variables-count">{variables.length}</span>
+                        </div>
+                        <div className="variable-list">
+                          {variables.map((variable, index) => {
+                            const svrVar = (this.state.serverVariables || []).find(
+                              v => v.name === variable
+                            );
+                            const defaultVal = svrVar?.defaultValue;
+                            const desc = svrVar?.description;
+                            const placeholder = defaultVal
+                              ? `默认值: ${defaultVal}`
+                              : `输入 ${variable}`;
+                            return (
+                              <div key={index} className="variable-input-item">
+                                <label className="variable-label">
+                                  {`{{${variable}}}`}
+                                  {desc && (
+                                    <span
+                                      style={{
+                                        fontWeight: 'normal',
+                                        color: '#999',
+                                        marginLeft: 4,
+                                        fontSize: 12,
+                                      }}
+                                    >
+                                      {desc}
+                                    </span>
+                                  )}
+                                </label>
+                                <Input
+                                  size="small"
+                                  placeholder={placeholder}
+                                  value={variableValues[variable] || ''}
+                                  onChange={value => this.handleVariableChange(variable, value)}
+                                  disabled={debugging}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {variables.length > 0 && <div className="input-divider"></div>}
+
+                    {/* User Input */}
+                    <div className="user-input-wrapper">
                       <div className="section-subtitle">
-                        {locale.templateVariables || '模板参数'}
-                        <span className="variables-count">{variables.length}</span>
+                        {locale.userInput || '用户输入'}
+                        <span className="required">*</span>
                       </div>
-                      <div className="variable-list">
-                        {variables.map((variable, index) => {
-                          const svrVar = (this.state.serverVariables || []).find(
-                            v => v.name === variable
-                          );
-                          const defaultVal = svrVar?.defaultValue;
-                          const desc = svrVar?.description;
-                          const placeholder = defaultVal
-                            ? `默认值: ${defaultVal}`
-                            : `输入 ${variable}`;
-                          return (
-                            <div key={index} className="variable-input-item">
-                              <label className="variable-label">
-                                {`{{${variable}}}`}
-                                {desc && (
-                                  <span
-                                    style={{
-                                      fontWeight: 'normal',
-                                      color: '#999',
-                                      marginLeft: 4,
-                                      fontSize: 12,
-                                    }}
-                                  >
-                                    {desc}
-                                  </span>
-                                )}
-                              </label>
-                              <Input
-                                size="small"
-                                placeholder={placeholder}
-                                value={variableValues[variable] || ''}
-                                onChange={value => this.handleVariableChange(variable, value)}
-                                disabled={debugging}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <Input.TextArea
+                        placeholder={locale.userInputPlaceholder || '输入要发送给模型的用户消息...'}
+                        value={userInput}
+                        onChange={this.handleUserInputChange}
+                        disabled={debugging}
+                        style={{ width: '100%', flex: 1, resize: 'none' }}
+                      />
                     </div>
-                  )}
 
-                  {variables.length > 0 && <div className="input-divider"></div>}
-
-                  {/* User Input */}
-                  <div className="user-input-wrapper">
-                    <div className="section-subtitle">
-                      {locale.userInput || '用户输入'}
-                      <span className="required">*</span>
-                    </div>
-                    <Input.TextArea
-                      placeholder={locale.userInputPlaceholder || '输入要发送给模型的用户消息...'}
-                      value={userInput}
-                      onChange={this.handleUserInputChange}
-                      disabled={debugging}
-                      style={{ width: '100%', flex: 1, resize: 'none' }}
-                    />
-                  </div>
-
-                  {/* Debug Button */}
-                  <div className="debug-actions">
-                    <Button
-                      type="primary"
-                      onClick={this.handleStartDebug}
-                      loading={debugging}
-                      disabled={!userInput || !userInput.trim()}
-                    >
-                      <Icon type="play" style={{ marginRight: 4 }} />
-                      {debugging
-                        ? locale.streaming || '调试中...'
-                        : locale.startDebug || '开始调试'}
-                    </Button>
-                    {(debugThinking || debugContent) && (
-                      <Button onClick={this.handleClearDebug} disabled={debugging}>
-                        {locale.clearResult || '清除结果'}
+                    {/* Debug Button */}
+                    <div className="debug-actions">
+                      <Button
+                        type="primary"
+                        onClick={this.handleStartDebug}
+                        loading={debugging}
+                        disabled={!userInput || !userInput.trim()}
+                      >
+                        <Icon type="play" style={{ marginRight: 4 }} />
+                        {debugging
+                          ? locale.streaming || '调试中...'
+                          : locale.startDebug || '开始调试'}
                       </Button>
-                    )}
-                  </div>
-
-                  {/* Debug Error */}
-                  {debugError && (
-                    <div className="debug-error">
-                      <Icon type="warning" style={{ marginRight: 8, color: '#ff4d4f' }} />
-                      {debugError}
+                      {(debugThinking || debugContent) && (
+                        <Button onClick={this.handleClearDebug} disabled={debugging}>
+                          {locale.clearResult || '清除结果'}
+                        </Button>
+                      )}
                     </div>
-                  )}
 
-                  {/* Model Response Section */}
-                  <div className="response-divider"></div>
-                  <div className="section-subtitle">
-                    {locale.modelOutput || '模型响应'}
-                    {debugging && <Loading size="small" style={{ marginLeft: 8 }} />}
-                  </div>
-                  <div className="model-response-box" ref={this.debugResultRef}>
-                    {!debugThinking && !debugContent && !debugging && (
-                      <div className="response-placeholder">
-                        {locale.responsePlaceholder || '点击"开始调试"后，模型响应将显示在这里...'}
+                    {/* Debug Error */}
+                    {debugError && (
+                      <div className="debug-error">
+                        <Icon type="warning" style={{ marginRight: 8, color: '#ff4d4f' }} />
+                        {debugError}
                       </div>
                     )}
-                    {debugThinking && (
-                      <div className="result-section thinking-section">
-                        <div className="result-label">
-                          <Icon type="eye" style={{ marginRight: 4 }} />
-                          {locale.thinking || '思考过程'}
-                        </div>
-                        <div className="result-content thinking-content">{debugThinking}</div>
-                      </div>
-                    )}
-                    {debugContent && (
-                      <div className="result-section content-section">
-                        <div className="result-label">
-                          <Icon type="success" style={{ marginRight: 4, color: '#52c41a' }} />
-                          {locale.modelOutput || '模型输出'}
-                        </div>
-                        <div className="result-content output-content">{debugContent}</div>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="debug-hint">
-                    {locale.debugHint ||
-                      '调试时会将 Prompt 模板中的变量替换后作为系统提示词发送给模型'}
+                    {/* Model Response Section */}
+                    <div className="response-divider"></div>
+                    <div className="section-subtitle">
+                      {locale.modelOutput || '模型响应'}
+                      {debugging && <Loading size="small" style={{ marginLeft: 8 }} />}
+                    </div>
+                    <div className="model-response-box" ref={this.debugResultRef}>
+                      {!debugThinking && !debugContent && !debugging && (
+                        <div className="response-placeholder">
+                          {locale.responsePlaceholder ||
+                            '点击"开始调试"后，模型响应将显示在这里...'}
+                        </div>
+                      )}
+                      {debugThinking && (
+                        <div className="result-section thinking-section">
+                          <div className="result-label">
+                            <Icon type="eye" style={{ marginRight: 4 }} />
+                            {locale.thinking || '思考过程'}
+                          </div>
+                          <div className="result-content thinking-content">{debugThinking}</div>
+                        </div>
+                      )}
+                      {debugContent && (
+                        <div className="result-section content-section">
+                          <div className="result-label">
+                            <Icon type="success" style={{ marginRight: 4, color: '#52c41a' }} />
+                            {locale.modelOutput || '模型输出'}
+                          </div>
+                          <div className="result-content output-content">{debugContent}</div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="debug-hint">
+                      {locale.debugHint ||
+                        '调试时会将 Prompt 模板中的变量替换后作为系统提示词发送给模型'}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </Loading>
 

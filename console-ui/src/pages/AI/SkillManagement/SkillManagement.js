@@ -36,7 +36,6 @@ import PageTitle from 'components/PageTitle';
 import { getParams, goLogin, request, setParams } from '@/globalLib';
 import { GLOBAL_PAGE_SIZE_LIST, LOGINPAGE_ENABLED } from '../../../constants';
 import TotalRender from '../../../components/Page/TotalRender';
-import SkillOptimizeDialog from './SkillOptimizeDialog';
 import './SkillManagement.scss';
 
 @ConfigProvider.config
@@ -61,11 +60,10 @@ class SkillManagement extends React.Component {
       selectedRowKeys: [],
       selectedRows: [],
       searchName: getParams('searchName') || '',
+      searchBizTag: getParams('searchBizTag') || '',
       nownamespace_name: '',
       nownamespace_id: '',
       nownamespace_desc: '',
-      optimizeDialogVisible: false,
-      currentOptimizeSkill: null,
       orderBy: '',
     };
   }
@@ -106,6 +104,7 @@ class SkillManagement extends React.Component {
     if (needclean) {
       this.setState({
         searchName: '',
+        searchBizTag: '',
         selectedRowKeys: [],
         selectedRows: [],
       });
@@ -115,13 +114,14 @@ class SkillManagement extends React.Component {
         namespace,
         namespaceShowName,
         searchName: '',
+        searchBizTag: '',
       });
     }
     this.getData();
   };
 
   getData = (pageNo = this.state.currentPage) => {
-    const { pageSize, searchName, orderBy } = this.state;
+    const { pageSize, searchName, searchBizTag, orderBy } = this.state;
     const { locale = {} } = this.props;
     const namespaceId = getParams('namespace') || '';
 
@@ -136,6 +136,9 @@ class SkillManagement extends React.Component {
     };
     if (orderBy) {
       data.orderBy = orderBy;
+    }
+    if (searchBizTag) {
+      data.bizTag = searchBizTag;
     }
 
     request({
@@ -164,8 +167,10 @@ class SkillManagement extends React.Component {
 
   handleSearch = () => {
     const searchName = this.field.getValue('searchName') || '';
-    this.setState({ searchName, currentPage: 1 }, () => {
+    const searchBizTag = this.field.getValue('searchBizTag') || '';
+    this.setState({ searchName, searchBizTag, currentPage: 1 }, () => {
       setParams('searchName', searchName);
+      setParams('searchBizTag', searchBizTag);
       setParams('pageNo', '1');
       this.getData(1);
     });
@@ -371,37 +376,6 @@ class SkillManagement extends React.Component {
     });
   };
 
-  handleOptimizeSkill = record => {
-    // Load full skill data first
-    const namespaceId = getParams('namespace') || '';
-    const params = new URLSearchParams();
-    params.append('skillName', record.name);
-    if (namespaceId) {
-      params.append('namespaceId', namespaceId);
-    }
-
-    request({
-      url: `v3/console/ai/skills?${params.toString()}`,
-      success: data => {
-        if (data && (data.code === 0 || data.code === 200) && data.data) {
-          this.setState({
-            currentOptimizeSkill: data.data,
-            optimizeDialogVisible: true,
-          });
-        } else {
-          const { locale = {} } = this.props;
-          Message.error(
-            data?.message || locale.getSkillInfoFailed || 'Failed to get Skill information'
-          );
-        }
-      },
-      error: () => {
-        const { locale = {} } = this.props;
-        Message.error(locale.getSkillInfoFailed || 'Failed to get Skill information');
-      },
-    });
-  };
-
   getTokenInfo = () => {
     const _LOGINPAGE_ENABLED = localStorage.getItem(LOGINPAGE_ENABLED);
     let token = {};
@@ -501,19 +475,6 @@ class SkillManagement extends React.Component {
     Message.error(errorMessage);
   };
 
-  handleOptimizeSuccess = optimizedSkill => {
-    const { locale = {} } = this.props;
-    Message.success(locale.optimizeSuccess || 'Optimization applied successfully');
-    this.getData();
-  };
-
-  handleOptimizeDialogClose = () => {
-    this.setState({
-      optimizeDialogVisible: false,
-      currentOptimizeSkill: null,
-    });
-  };
-
   renderOperationColumn = (value, index, record) => {
     const { locale = {} } = this.props;
     const isEnabled = record.enable !== false;
@@ -587,29 +548,37 @@ class SkillManagement extends React.Component {
                     onPressEnter={this.handleSearch}
                   />
                 </Form.Item>
+                <Form.Item label={`${locale.bizTag || 'BizTag'}：`}>
+                  <Input
+                    name="searchBizTag"
+                    placeholder={locale.bizTagPlaceholder || 'Please enter business tag'}
+                    style={{ width: 200 }}
+                    onPressEnter={this.handleSearch}
+                  />
+                </Form.Item>
                 <Form.Item>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <Button type="primary" onClick={this.handleSearch}>
-                      {locale.search || 'Search'}
-                    </Button>
-                    <Button type="primary" onClick={this.handleCreateSkill}>
-                      {locale.createSkill || 'Create Skill'}
-                    </Button>
-                    <Upload
-                      accept=".zip"
-                      action={this.getUploadAction()}
-                      headers={this.getUploadHeaders()}
-                      beforeUpload={this.beforeUpload}
-                      formatter={this.uploadFormatter}
-                      onSuccess={this.handleUploadSuccess}
-                      onError={this.handleUploadError}
-                      showUploadList={false}
-                    >
-                      <Button type="normal">{locale.uploadSkill || 'Upload Skill'}</Button>
-                    </Upload>
-                  </div>
+                  <Button type="primary" onClick={this.handleSearch}>
+                    {locale.search || 'Search'}
+                  </Button>
                 </Form.Item>
               </Form>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: 10 }}>
+                <Button type="primary" onClick={this.handleCreateSkill}>
+                  {locale.createSkill || 'Create Skill'}
+                </Button>
+                <Upload
+                  accept=".zip"
+                  action={this.getUploadAction()}
+                  headers={this.getUploadHeaders()}
+                  beforeUpload={this.beforeUpload}
+                  formatter={this.uploadFormatter}
+                  onSuccess={this.handleUploadSuccess}
+                  onError={this.handleUploadError}
+                  showUploadList={false}
+                >
+                  <Button type="normal">{locale.uploadSkill || 'Upload Skill'}</Button>
+                </Upload>
+              </div>
             </div>
 
             <Table
@@ -778,15 +747,6 @@ class SkillManagement extends React.Component {
                 />
               </>
             )}
-
-            <SkillOptimizeDialog
-              visible={this.state.optimizeDialogVisible}
-              skill={this.state.currentOptimizeSkill}
-              onClose={this.handleOptimizeDialogClose}
-              onSuccess={this.handleOptimizeSuccess}
-              locale={this.props.locale}
-              history={this.props.history}
-            />
           </div>
         </div>
       </>

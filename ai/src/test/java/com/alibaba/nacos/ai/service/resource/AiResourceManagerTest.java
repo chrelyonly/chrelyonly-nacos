@@ -302,6 +302,97 @@ class AiResourceManagerTest {
         assertTrue(ex.getErrMsg().contains("missing"));
     }
     
+    // ---- passthrough persistence helpers ----
+    
+    @Test
+    void findMetaShouldDelegateToPersistService() {
+        AiResource meta = buildMeta("res");
+        when(aiResourcePersistService.find(NAMESPACE_ID, "res", RESOURCE_TYPE)).thenReturn(meta);
+        assertEquals(meta, manager.findMeta(NAMESPACE_ID, "res", RESOURCE_TYPE));
+    }
+    
+    @Test
+    void findVersionShouldDelegateToPersistService() {
+        AiResourceVersion row = new AiResourceVersion();
+        row.setVersion("v1");
+        when(aiResourceVersionPersistService.find(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1")).thenReturn(row);
+        assertEquals(row, manager.findVersion(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1"));
+    }
+    
+    @Test
+    void updateVersionStorageAndDescShouldDelegate() {
+        manager.updateVersionStorageAndDesc(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1", "{\"x\":1}", "desc");
+        verify(aiResourceVersionPersistService).updateStorageAndDesc(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1",
+                "{\"x\":1}", "desc");
+    }
+    
+    @Test
+    void updateVersionStorageShouldDelegate() {
+        manager.updateVersionStorage(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1", "{\"x\":1}");
+        verify(aiResourceVersionPersistService).updateStorage(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1", "{\"x\":1}");
+    }
+    
+    @Test
+    void updateVersionStatusShouldDelegate() {
+        manager.updateVersionStatus(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1", AiResourceConstants.VERSION_STATUS_ONLINE);
+        verify(aiResourceVersionPersistService).updateStatus(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1",
+                AiResourceConstants.VERSION_STATUS_ONLINE);
+    }
+    
+    @Test
+    void updateVersionPublishPipelineInfoShouldDelegate() {
+        manager.updateVersionPublishPipelineInfo(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1", "{\"executionId\":\"1\"}");
+        verify(aiResourceVersionPersistService).updatePublishPipelineInfo(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1",
+                "{\"executionId\":\"1\"}");
+    }
+    
+    @Test
+    void deleteVersionShouldDelegate() {
+        manager.deleteVersion(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1");
+        verify(aiResourceVersionPersistService).delete(NAMESPACE_ID, "res", RESOURCE_TYPE, "v1");
+    }
+    
+    @Test
+    void deleteVersionsByNameAndTypeShouldDelegate() {
+        manager.deleteVersionsByNameAndType(NAMESPACE_ID, "res", RESOURCE_TYPE);
+        verify(aiResourceVersionPersistService).deleteByNameAndType(NAMESPACE_ID, "res", RESOURCE_TYPE);
+    }
+    
+    @Test
+    void deleteMetaShouldDelegate() {
+        manager.deleteMeta(NAMESPACE_ID, "res", RESOURCE_TYPE);
+        verify(aiResourcePersistService).delete(NAMESPACE_ID, "res", RESOURCE_TYPE);
+    }
+    
+    @Test
+    void generateLikeArgumentShouldDelegate() {
+        when(aiResourcePersistService.generateLikeArgument("%abc%")).thenReturn("like-value");
+        assertEquals("like-value", manager.generateLikeArgument("%abc%"));
+    }
+    
+    @Test
+    void listMetaByTypeShouldDelegate() {
+        Page<AiResource> expected = new Page<>();
+        when(aiResourcePersistService.list(NAMESPACE_ID, RESOURCE_TYPE, "name", "tag", 1, 10)).thenReturn(expected);
+        assertEquals(expected, manager.listMetaByType(NAMESPACE_ID, RESOURCE_TYPE, "name", "tag", 1, 10));
+    }
+    
+    @Test
+    void listMetaShouldDelegate() {
+        QueryCondition condition = new QueryCondition();
+        Page<AiResource> expected = new Page<>();
+        when(aiResourcePersistService.list(condition, 1, 10)).thenReturn(expected);
+        assertEquals(expected, manager.listMeta(condition, 1, 10));
+    }
+    
+    @Test
+    void listVersionsShouldDelegate() {
+        Page<AiResourceVersion> expected = new Page<>();
+        when(aiResourceVersionPersistService.list(NAMESPACE_ID, "res", RESOURCE_TYPE, "online", 1, 10))
+                .thenReturn(expected);
+        assertEquals(expected, manager.listVersions(NAMESPACE_ID, "res", RESOURCE_TYPE, "online", 1, 10));
+    }
+    
     // ---- updateVersionInfoCas ----
     
     @Test
@@ -1512,7 +1603,22 @@ class AiResourceManagerTest {
         assertEquals(AiResourceConstants.META_STATUS_ENABLE, meta.getStatus());
         assertEquals("desc", meta.getDesc());
         assertEquals("[\"tag\"]", meta.getBizTags());
+        assertEquals(VisibilityConstants.SCOPE_PRIVATE, meta.getScope());
         assertEquals(1L, meta.getMetaVersion());
+    }
+    
+    @Test
+    void initOrUpdateMetaForDraftShouldUsePluginDefaultScopeWhenCreateNewMeta() throws NacosException {
+        com.alibaba.nacos.plugin.visibility.spi.VisibilityService mockVisibilityService =
+                mock(com.alibaba.nacos.plugin.visibility.spi.VisibilityService.class);
+        when(mockVisibilityService.resolveDefaultScopeForCreate(anyString(), anyString(), anyString()))
+                .thenReturn(VisibilityConstants.SCOPE_PUBLIC);
+        when(mockVisibilityManager.findVisibilityService(anyString())).thenReturn(Optional.of(mockVisibilityService));
+        manager.initOrUpdateMetaForDraft(NAMESPACE_ID, "res", RESOURCE_TYPE, "desc", "[\"tag\"]",
+                "v1", null, true);
+        ArgumentCaptor<AiResource> captor = ArgumentCaptor.forClass(AiResource.class);
+        verify(aiResourcePersistService).insert(captor.capture());
+        assertEquals(VisibilityConstants.SCOPE_PUBLIC, captor.getValue().getScope());
     }
     
     @Test

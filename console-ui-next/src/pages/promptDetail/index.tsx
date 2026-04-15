@@ -66,11 +66,11 @@ import {
 } from '@/components/ui/sheet';
 import { useNamespaceStore } from '@/stores/namespace-store';
 import { usePromptStore } from '@/stores/prompt-store';
+import { useServerStore } from '@/stores/server-store';
 import { promptApi } from '@/api/prompt';
 import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
 import { parsePipelineInfo } from '@/types/skill';
-import { parseBizTags } from '@/types/prompt';
 import { PromptVersionTimeline } from '@/pages/promptManagement/components/PromptVersionTimeline';
 import { PipelineStatusDisplay } from '@/pages/skillManagement/components/PipelineStatusDisplay';
 import { LabelBindDialog } from '@/components/ai/LabelBindDialog';
@@ -104,6 +104,7 @@ export default function PromptDetailPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { currentNamespace } = useNamespaceStore();
+  const copilotEnabled = useServerStore((s) => s.copilotEnabled);
   const {
     currentGovernance,
     currentVersion: storeVersion,
@@ -526,7 +527,7 @@ export default function PromptDetailPage() {
   // --- Edit metadata ---
   const handleEdit = () => {
     setEditDescription(meta?.description || '');
-    setEditBizTags(parseBizTags(meta?.bizTags));
+    setEditBizTags(meta?.bizTags || []);
     setEditTagInput('');
     setEditDialogOpen(true);
   };
@@ -696,9 +697,9 @@ export default function PromptDetailPage() {
                     {dayjs(meta.gmtModified).format('YYYY-MM-DD HH:mm')}
                   </span>
                 )}
-                {meta.bizTags && parseBizTags(meta.bizTags).length > 0 && (
+                {meta.bizTags && meta.bizTags.length > 0 && (
                   <div className="flex items-center gap-1">
-                    {parseBizTags(meta.bizTags).slice(0, 3).map((tag) => (
+                    {meta.bizTags.slice(0, 3).map((tag) => (
                       <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0">{tag}</Badge>
                     ))}
                   </div>
@@ -818,7 +819,7 @@ export default function PromptDetailPage() {
                 <Sparkles className="h-4 w-4 text-amber-500" />
                 {t('prompt.template')}
               </h2>
-              {isEditingDraft && (
+              {isEditingDraft && copilotEnabled && (
                 <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setOptimizeOpen(true)} disabled={!template.trim()}>
                   <Sparkles className="h-3 w-3" />
                   {t('prompt.aiOptimize')}
@@ -848,6 +849,7 @@ export default function PromptDetailPage() {
           </Card>
 
           {/* Debug Panel Card */}
+          {copilotEnabled && (
           <Card className="overflow-hidden py-0 gap-0">
             <div className="px-5 py-3.5 border-b bg-muted/30 flex items-center justify-between">
               <h2 className="text-sm font-semibold flex items-center gap-2">
@@ -934,9 +936,8 @@ export default function PromptDetailPage() {
               </div>
             </CardContent>
           </Card>
+          )}
         </div>
-
-        {/* Right: Sidebar */}
         <div className="space-y-4 lg:w-[320px]">
           {/* Basic Info Card */}
           <Card className="overflow-hidden py-0 gap-0">
@@ -996,9 +997,9 @@ export default function PromptDetailPage() {
               </Button>
             </div>
             <CardContent className="p-3.5">
-              {meta.bizTags && parseBizTags(meta.bizTags).length > 0 ? (
+              {meta.bizTags && meta.bizTags.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {parseBizTags(meta.bizTags).map((tag) => (
+                  {meta.bizTags.map((tag) => (
                     <DetailTagChip key={tag} label={tag} />
                   ))}
                 </div>
@@ -1304,7 +1305,7 @@ export default function PromptDetailPage() {
       <BizTagEditDialog
         open={bizTagDialogOpen}
         onOpenChange={setBizTagDialogOpen}
-        tags={parseBizTags(meta?.bizTags)}
+        tags={meta?.bizTags || []}
         placeholder={t('prompt.tagPlaceholder')}
         emptyText={t('prompt.noLabels')}
         onSave={handleSaveBizTags}

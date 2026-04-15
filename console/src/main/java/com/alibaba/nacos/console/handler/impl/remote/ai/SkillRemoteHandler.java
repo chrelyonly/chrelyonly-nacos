@@ -98,6 +98,7 @@ public class SkillRemoteHandler implements SkillHandler {
                 skillListForm.getOrderBy(),
                 filterableForm.getOwner(),
                 filterableForm.getScope(),
+                filterableForm.getBizTag(),
                 pageForm.getPageNo(),
                 pageForm.getPageSize()
         );
@@ -120,7 +121,7 @@ public class SkillRemoteHandler implements SkillHandler {
     @Override
     public String createDraft(SkillDraftCreateForm form) throws NacosException {
         return clientHolder.getAiMaintainerService().skill().createDraft(form.getNamespaceId(), form.getSkillName(),
-                form.getBasedOnVersion(), form.getSkillCard());
+                form.getBasedOnVersion(), form.getTargetVersion(), form.getSkillCard());
     }
 
     @Override

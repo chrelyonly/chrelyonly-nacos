@@ -39,6 +39,11 @@ import MagicWandIcon from '../../../components/MagicWandIcon/MagicWandIcon';
 import JSZip from 'jszip';
 import { getLanguageFromFileName } from '../../../utils/languageDetector';
 import { getParams, request } from '@/globalLib';
+import { COPILOT_ENABLED } from '@/constants';
+import {
+  fetchPipelineExecutionDetail,
+  mapExecutionToPipelineInfo,
+} from '@/utils/pipelineApi';
 
 const { Row, Col } = Grid;
 const { Panel } = Collapse;
@@ -250,7 +255,7 @@ class SkillDetail extends React.Component {
     const updatedSkillData = {
       name: optimizedSkill.name || skillData.name,
       description: optimizedSkill.description || skillData.description || '',
-      instruction: optimizedSkill.instruction || skillData.instruction || '',
+      skillMd: optimizedSkill.skillMd || optimizedSkill.instruction || skillData.skillMd || '',
       resource:
         optimizedSkill.resource && Object.keys(optimizedSkill.resource).length > 0
           ? optimizedSkill.resource
@@ -343,7 +348,7 @@ class SkillDetail extends React.Component {
           const updatedSkillData = {
             ...this.state.skillData,
             name: versionData.name || this.state.skillData?.name || skillName,
-            instruction: versionData.instruction || '',
+            skillMd: versionData.skillMd || '',
             description: versionData.description || '',
             resource: versionData.resource || {},
           };
@@ -369,21 +374,50 @@ class SkillDetail extends React.Component {
               ? fileTree.find(file => file.name === 'SKILL.md' && file.fileType === 'skill-md')
               : null;
 
-          this.setState({
-            skillData: updatedSkillData,
-            fileTree,
-            selectedFile: skillMdFile || (fileTree && fileTree.length > 0 ? fileTree[0] : null),
-            resources,
-            selectedVersion: version,
-            selectedVersionStatus: versionSummary?.status || null,
-            pipelineInfo,
-          });
+          this.setState(
+            {
+              skillData: updatedSkillData,
+              fileTree,
+              selectedFile: skillMdFile || (fileTree && fileTree.length > 0 ? fileTree[0] : null),
+              resources,
+              selectedVersion: version,
+              selectedVersionStatus: versionSummary?.status || null,
+              pipelineInfo,
+            },
+            () => {
+              if (pipelineInfo && pipelineInfo.executionId) {
+                this.syncPipelineExecutionFromConsole(pipelineInfo.executionId);
+              }
+            }
+          );
         }
       },
       error: () => {
         this.setState({ versionLoading: false });
         const { locale = {} } = this.props;
         Message.error(locale.getSkillInfoFailed || 'Failed to get version content');
+      },
+    });
+  };
+
+  /**
+   * Refreshes pipeline status/nodes from Console pipeline API (GET .../pipelines/detail).
+   */
+  syncPipelineExecutionFromConsole = executionId => {
+    if (!executionId) {
+      return;
+    }
+    fetchPipelineExecutionDetail(executionId, {
+      success: data => {
+        if (data && (data.code === 0 || data.code === 200) && data.data) {
+          const merged = mapExecutionToPipelineInfo(data.data);
+          if (merged) {
+            this.setState({ pipelineInfo: merged });
+          }
+        }
+      },
+      error: () => {
+        // Keep governance snapshot on failure (e.g. older server without /detail).
       },
     });
   };
@@ -830,7 +864,7 @@ class SkillDetail extends React.Component {
     const skillCard = {
       name: updatedSkillData.name || skillName,
       description: updatedSkillData.description || '',
-      instruction: updatedSkillData.instruction || '',
+      skillMd: updatedSkillData.skillMd || '',
       resource: updatedSkillData.resource || {},
     };
 
@@ -918,7 +952,7 @@ class SkillDetail extends React.Component {
     return {
       name: skillData.name || '',
       description: skillData.description || '',
-      instruction: skillData.instruction || '',
+      skillMd: skillData.skillMd || '',
       resource: skillData.resource || {},
     };
   };
@@ -932,7 +966,7 @@ class SkillDetail extends React.Component {
     return {
       name: skillData.name || '',
       description: skillData.description || '',
-      instruction: skillData.instruction || '',
+      skillMd: skillData.skillMd || '',
       resource: skillData.resource || {},
     };
   };
@@ -1031,15 +1065,16 @@ class SkillDetail extends React.Component {
       return '';
     }
 
+    // Use skillMd directly if available (from version API)
+    if (previewData.skillMd) {
+      return previewData.skillMd;
+    }
+
+    // Fallback: reconstruct from individual fields
     let markdown = '---\n';
     markdown += `name: ${this.escapeYamlValue(previewData.name || '')}\n`;
     markdown += `description: ${this.escapeYamlValue(previewData.description || '')}\n`;
-    markdown += '---\n\n';
-
-    // Instructions section - directly show instruction content without "## Instructions" header
-    if (previewData.instruction && previewData.instruction.trim() !== '') {
-      markdown += `${previewData.instruction}\n`;
-    }
+    markdown += '---\n';
 
     return markdown;
   };
@@ -1940,10 +1975,12 @@ class SkillDetail extends React.Component {
                   </Button>
                 </>
               )}
-              <Button onClick={this.handleOptimize}>
-                <MagicWandIcon size={16} style={{ marginRight: 4, verticalAlign: 'middle' }} />{' '}
-                {locale.aiOptimize || 'AI Optimize'}
-              </Button>
+              {localStorage.getItem(COPILOT_ENABLED) === 'true' && (
+                <Button onClick={this.handleOptimize}>
+                  <MagicWandIcon size={16} style={{ marginRight: 4, verticalAlign: 'middle' }} />{' '}
+                  {locale.aiOptimize || 'AI Optimize'}
+                </Button>
+              )}
               <Button warning onClick={this.handleDelete}>
                 <Icon type="delete" /> {locale.delete || 'Delete'}
               </Button>
@@ -1971,7 +2008,7 @@ class SkillDetail extends React.Component {
           )}
 
           {/* Pipeline status */}
-          {selectedVersionStatus === 'reviewing' && pipelineInfo && (
+          {pipelineInfo && (
             <div
               style={{
                 padding: '8px 16px',

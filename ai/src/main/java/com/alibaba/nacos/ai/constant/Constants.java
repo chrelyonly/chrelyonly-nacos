@@ -108,6 +108,10 @@ public class Constants {
         public static final String NACOS_AGENT_ENDPOINT_PROTOCOL_KEY = "__nacos.agent.endpoint.protocol__";
         
         public static final String NACOS_AGENT_ENDPOINT_QUERY_KEY = "__nacos.agent.endpoint.query__";
+        
+        public static final String NACOS_AGENT_ENDPOINT_PROTOCOL_VERSION_KEY = "__nacos.agent.endpoint.protocolVersion__";
+        
+        public static final String NACOS_AGENT_ENDPOINT_TENANT_KEY = "__nacos.agent.endpoint.tenant__";
     }
     
     public static class Skills {
@@ -167,6 +171,16 @@ public class Constants {
         public static final String ADMIN_PATH = "/v3/admin/ai/pipelines";
         
         public static final String CONSOLE_PATH = "/v3/console/ai/pipelines";
+        
+        /**
+         * List pipeline executions (aligned with Skill/Prompt {@code /list} style).
+         */
+        public static final String LIST_SUBPATH = "/list";
+        
+        /**
+         * Get single pipeline execution by id (query parameter {@code pipelineId}).
+         */
+        public static final String DETAIL_SUBPATH = "/detail";
     }
     
     public static class Prompt {

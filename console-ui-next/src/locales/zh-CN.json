@@ -25,7 +25,11 @@
     "usernameRequired": "用户名不能为空",
     "productDesc": "一个易于构建 AI Agent 应用的动态服务发现、配置管理和 AI 智能体管理平台",
     "consoleClosed": "控制台已关闭",
-    "consoleClosedDesc": "Nacos 控制台已关闭。"
+    "consoleClosedDesc": "Nacos 控制台已关闭。",
+    "signInWithSSO": "使用 SSO 登录",
+    "ssoLoginTip": "您的管理员已启用单点登录。点击下方按钮跳转到身份提供商完成登录。",
+    "oidcRedirectFailed": "跳转到 SSO 登录页失败，请联系管理员。",
+    "oidcAuthFailed": "SSO 认证失败"
   },
   "menu": {
     "configManagement": "配置管理",
@@ -799,7 +803,8 @@
     "typeVisibility": "可见性",
     "availableNodes": "可用节点",
     "yes": "是",
-    "no": "否"
+    "no": "否",
+    "pluginCount": "个插件"
   },
   "authority": {
     "title": "权限控制",
@@ -1170,6 +1175,8 @@
     "filterScopeAll": "所有范围",
     "filterScopePublic": "仅公开",
     "filterScopePrivate": "仅私有",
+    "filterByBizTag": "按业务标签过滤",
+    "filterBizTagPlaceholder": "输入业务标签",
     "labelKeyRequired": "标签键不能为空",
     "labelKeyInvalid": "标签键格式不合法",
     "labelKeyDuplicate": "标签键已存在",

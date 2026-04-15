@@ -43,6 +43,12 @@ const I18N_CONF = {
     invalidUsernameOrPassword: 'invalid username or password',
     productDesc:
       'an easy-to-use dynamic service discovery, configuration and service management platform for building cloud native applications',
+    signInWithSSO: 'Sign in with SSO',
+    ssoLoginTip:
+      'Single sign-on is enabled by your administrator. Click the button below to continue to the identity provider.',
+    oidcRedirectFailed: 'Failed to redirect to SSO login page. Please contact your administrator.',
+    getStateFailed: 'Failed to determine authentication method. Please refresh the page.',
+    oidcAuthFailed: 'SSO authentication failed',
   },
   MainLayout: {
     nacosName: 'NACOS',
@@ -92,6 +98,8 @@ const I18N_CONF = {
     pluginName: 'Plugin Name',
     pluginType: 'Plugin Type',
     pluginTypeAll: 'All Types',
+    pluginCount: 'plugins',
+    back: 'Back',
     enabled: 'Enabled',
     disabled: 'Disabled',
     critical: 'Critical',
@@ -970,11 +978,6 @@ const I18N_CONF = {
     deletePrompt: 'Delete Prompt',
     getPromptFailed: 'Failed to get Prompt detail',
     getHistoryFailed: 'Failed to get history version',
-    // PublishPromptVersion page
-    currentVersion: 'Current Version',
-    newVersion: 'New Version',
-    versionMustBeGreater: 'New version must be greater than current version {0}',
-    versionMustBeGreaterHelp: 'Must be greater than current version {0}',
     publish: 'Publish',
     publishSuccess: 'Published successfully',
     publishFailed: 'Failed to publish',
@@ -1052,6 +1055,8 @@ const I18N_CONF = {
     skillName: 'Name',
     skillId: 'Skill ID',
     search: 'Search',
+    bizTag: 'BizTag',
+    bizTagPlaceholder: 'Please enter business tag',
     details: 'Details',
     edit: 'Edit',
     delete: 'Delete',
