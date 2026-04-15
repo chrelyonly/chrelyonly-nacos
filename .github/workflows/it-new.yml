@@ -24,7 +24,7 @@ jobs:
       - name: Build with Maven
         run: mvn clean install -Prelease-nacos -DskipTests=true
 
-      - name: Start Server
+      - name: Start Server Without Auth
         run: |
           echo "Configuring application.properties..."
           PROP_FILE=$(ls distribution/target/nacos-server-*/nacos/conf/application.properties)
@@ -32,6 +32,9 @@ jobs:
           sed 's|nacos.core.auth.plugin.nacos.token.secret.key=.*|nacos.core.auth.plugin.nacos.token.secret.key=VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=|' "$PROP_FILE" > "${PROP_FILE}.tmp" && mv "${PROP_FILE}.tmp" "$PROP_FILE"
           sed 's|nacos.core.auth.server.identity.key=.*|nacos.core.auth.server.identity.key=testKey|' "$PROP_FILE" > "${PROP_FILE}.tmp" && mv "${PROP_FILE}.tmp" "$PROP_FILE"
           sed 's|nacos.core.auth.server.identity.value=.*|nacos.core.auth.server.identity.value=testValue|' "$PROP_FILE" > "${PROP_FILE}.tmp" && mv "${PROP_FILE}.tmp" "$PROP_FILE"
+          sed 's|nacos.core.auth.enabled=.*|nacos.core.auth.enabled=false|' "$PROP_FILE" > "${PROP_FILE}.tmp" && mv "${PROP_FILE}.tmp" "$PROP_FILE"
+          sed 's|nacos.core.auth.admin.enabled=.*|nacos.core.auth.admin.enabled=false|' "$PROP_FILE" > "${PROP_FILE}.tmp" && mv "${PROP_FILE}.tmp" "$PROP_FILE"
+          sed 's|nacos.core.auth.console.enabled=.*|nacos.core.auth.console.enabled=false|' "$PROP_FILE" > "${PROP_FILE}.tmp" && mv "${PROP_FILE}.tmp" "$PROP_FILE"
 
           echo "Starting server..."
           bash distribution/target/nacos-server-*/nacos/bin/startup.sh -m standalone
