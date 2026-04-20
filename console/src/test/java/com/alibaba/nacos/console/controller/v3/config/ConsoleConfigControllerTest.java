@@ -26,7 +26,6 @@ import com.alibaba.nacos.api.config.model.SameConfigPolicy;
 import com.alibaba.nacos.api.model.Page;
 import com.alibaba.nacos.api.model.v2.ErrorCode;
 import com.alibaba.nacos.api.model.v2.Result;
-import com.alibaba.nacos.auth.config.NacosAuthConfig;
 import com.alibaba.nacos.common.http.param.MediaType;
 import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.config.server.controller.parameters.SameNamespaceCloneConfigBean;
@@ -36,7 +35,6 @@ import com.alibaba.nacos.config.server.model.form.ConfigForm;
 import com.alibaba.nacos.config.server.model.form.ConfigFormV3;
 import com.alibaba.nacos.config.server.utils.RequestUtil;
 import com.alibaba.nacos.console.proxy.config.ConfigProxy;
-import com.alibaba.nacos.core.auth.AuthFilter;
 import com.alibaba.nacos.sys.env.EnvUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,7 +43,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -76,6 +73,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -93,12 +91,6 @@ public class ConsoleConfigControllerTest {
     
     private static final String TEST_CONTENT = "test config";
     
-    @InjectMocks
-    private AuthFilter authFilter;
-    
-    @Mock
-    private NacosAuthConfig authConfig;
-    
     private ConsoleConfigController consoleConfigController;
     
     private MockMvc mockmvc;
@@ -110,8 +102,7 @@ public class ConsoleConfigControllerTest {
     void setUp() {
         EnvUtil.setEnvironment(new StandardEnvironment());
         consoleConfigController = new ConsoleConfigController(configProxy);
-        mockmvc = MockMvcBuilders.standaloneSetup(consoleConfigController).addFilter(authFilter).build();
-        when(authConfig.isAuthEnabled()).thenReturn(false);
+        mockmvc = MockMvcBuilders.standaloneSetup(consoleConfigController).build();
     }
     
     @Test
@@ -341,9 +332,29 @@ public class ConsoleConfigControllerTest {
         int actualStatus = response.getStatus();
         
         assertEquals(200, actualStatus);
-        
+
     }
-    
+
+    @Test
+    void testExportConfigV2WithoutIds() throws Exception {
+        String dataId = "dataId2.json";
+        String group = "group2";
+        String tenant = "tenant234";
+        String appname = "appname2";
+
+        byte[] serializedData = new byte[]{1, 2, 3};
+        ResponseEntity<byte[]> responseEntity = new ResponseEntity<>(serializedData, HttpStatus.OK);
+
+        Mockito.when(configProxy.exportConfigV2(eq(dataId), eq(group), eq(tenant), eq(appname), isNull()))
+                .thenReturn(responseEntity);
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/v3/console/cs/config/export2")
+                .param("dataId", dataId).param("groupName", group).param("tenant", tenant)
+                .param("appName", appname);
+
+        MockHttpServletResponse response = mockmvc.perform(builder).andReturn().getResponse();
+        assertEquals(200, response.getStatus());
+    }
+
     @Test
     void testImportAndPublishConfig() throws Exception {
         String srcUser = "testUser";

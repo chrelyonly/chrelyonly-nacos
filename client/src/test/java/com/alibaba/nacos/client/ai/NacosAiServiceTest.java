@@ -19,7 +19,9 @@ package com.alibaba.nacos.client.ai;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.ai.listener.AbstractNacosMcpServerListener;
 import com.alibaba.nacos.api.ai.listener.NacosMcpServerEvent;
+import com.alibaba.nacos.api.ai.model.a2a.AgentCard;
 import com.alibaba.nacos.api.ai.model.a2a.AgentEndpoint;
+import com.alibaba.nacos.api.ai.model.a2a.AgentInterface;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerBasicInfo;
 import com.alibaba.nacos.api.ai.model.mcp.McpServerDetailInfo;
 import com.alibaba.nacos.api.ai.model.mcp.registry.ServerVersionDetail;
@@ -31,6 +33,7 @@ import com.alibaba.nacos.client.ai.cache.NacosMcpServerCacheHolder;
 import com.alibaba.nacos.client.ai.event.AiChangeNotifier;
 import com.alibaba.nacos.client.ai.event.McpServerListenerInvoker;
 import com.alibaba.nacos.client.ai.remote.AiGrpcClient;
+import com.alibaba.nacos.client.ai.remote.AiHttpClientProxy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +46,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -126,7 +130,7 @@ class NacosAiServiceTest {
         serverSpecification.setVersionDetail(new ServerVersionDetail());
         serverSpecification.getVersionDetail().setVersion("1.0.0");
         String id = UUID.randomUUID().toString();
-        when(grpcClient.releaseMcpServer(serverSpecification, null, null)).thenReturn(id);
+        when(grpcClient.releaseMcpServer(serverSpecification, null, null, null)).thenReturn(id);
         assertEquals(id, nacosAiService.releaseMcpServer(serverSpecification, null));
     }
     
@@ -224,6 +228,46 @@ class NacosAiServiceTest {
     }
     
     @Test
+    void releaseAgentCardShouldAcceptLegacyFields() throws Exception {
+        injectMocks();
+        AgentCard agentCard = new AgentCard();
+        agentCard.setName("testAgent");
+        agentCard.setVersion("1.0.0");
+        agentCard.setProtocolVersion("1.0");
+        agentCard.setPreferredTransport("JSONRPC");
+        agentCard.setUrl("http://127.0.0.1:8080/agent");
+        nacosAiService.releaseAgentCard(agentCard, "service", true);
+        verify(grpcClient).releaseAgentCard(agentCard, "service", true);
+    }
+    
+    @Test
+    void releaseAgentCardShouldAcceptV1Interfaces() throws Exception {
+        injectMocks();
+        AgentCard agentCard = new AgentCard();
+        agentCard.setName("testAgent");
+        agentCard.setVersion("1.0.0");
+        AgentInterface agentInterface = new AgentInterface();
+        agentInterface.setUrl("http://127.0.0.1:8080/agent");
+        agentInterface.setProtocolBinding("JSONRPC");
+        agentInterface.setProtocolVersion("1.0");
+        agentCard.setSupportedInterfaces(Collections.singletonList(agentInterface));
+        nacosAiService.releaseAgentCard(agentCard, "service", true);
+        verify(grpcClient).releaseAgentCard(agentCard, "service", true);
+    }
+    
+    @Test
+    void releaseAgentCardShouldShowUnifiedErrorWhenFormatsInvalid() {
+        AgentCard agentCard = new AgentCard();
+        agentCard.setName("testAgent");
+        agentCard.setVersion("1.0.0");
+        NacosApiException exception = assertThrows(NacosApiException.class,
+                () -> nacosAiService.releaseAgentCard(agentCard, "service", true));
+        assertEquals("Required parameter `agentCard.supportedInterfaces` not present, and old protocol fields "
+                + "(`agentCard.protocolVersion`, `agentCard.preferredTransport`, `agentCard.url`) are incomplete. "
+                + "Please prefer `agentCard.supportedInterfaces` for A2A 1.0.0.", exception.getMessage());
+    }
+    
+    @Test
     void registerAgentEndpointWithCollection() throws NoSuchFieldException, IllegalAccessException, NacosException {
         injectMocks();
         Collection<AgentEndpoint> endpoints = createTestEndpoints();
@@ -284,6 +328,12 @@ class NacosAiServiceTest {
         field.setAccessible(true);
         final AiGrpcClient autoBuildGrpcClient = (AiGrpcClient) field.get(nacosAiService);
         field.set(nacosAiService, grpcClient);
+        field = NacosAiService.class.getDeclaredField("httpProxy");
+        field.setAccessible(true);
+        final AiHttpClientProxy autoBuildHttpProxy = (AiHttpClientProxy) field.get(nacosAiService);
+        field = NacosAiService.class.getDeclaredField("aiClientProxy");
+        field.setAccessible(true);
+        field.set(nacosAiService, grpcClient);
         field = NacosAiService.class.getDeclaredField("mcpServerCacheHolder");
         field.setAccessible(true);
         NacosMcpServerCacheHolder autoBuildCacheHolder = (NacosMcpServerCacheHolder) field.get(nacosAiService);
@@ -297,6 +347,7 @@ class NacosAiServiceTest {
         field.set(nacosAiService, aiChangeNotifier);
         try {
             autoBuildGrpcClient.shutdown();
+            autoBuildHttpProxy.shutdown();
             autoBuildCacheHolder.shutdown();
             autoBuildAgentCacheHolder.shutdown();
         } catch (NacosException ignored) {

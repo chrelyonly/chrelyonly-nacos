@@ -41,12 +41,16 @@ public class Constants {
     
     public static final String MCP_SERVER_TOOL_GROUP = "mcp-tools";
     
+    public static final String MCP_SERVER_RESOURCE_GROUP = "mcp-resources";
+
     public static final String MCP_SERVER_SPEC_DATA_ID_SUFFIX = "-mcp-server.json";
     
     public static final String MCP_SERVER_VERSION_DATA_ID_SUFFIX = "-mcp-versions.json";
     
     public static final String MCP_SERVER_TOOL_DATA_ID_SUFFIX = "-mcp-tools.json";
     
+    public static final String MCP_SERVER_RESOURCE_DATA_ID_SUFFIX = "-mcp-resources.json";
+
     public static final String MCP_SERVER_ENDPOINT_GROUP = "mcp-endpoints";
     
     public static final String MCP_SERVER_ENDPOINT_CLUSTER = com.alibaba.nacos.api.common.Constants.DEFAULT_CLUSTER_NAME;
@@ -83,6 +87,8 @@ public class Constants {
     
     public static final String SERVER_TOOLS_SPEC_CONFIG_DATA_ID_TEMPLATE = "%s-%s" + MCP_SERVER_TOOL_DATA_ID_SUFFIX;
     
+    public static final String SERVER_RESOURCE_SPEC_CONFIG_DATA_ID_TEMPLATE = "%s-%s" + MCP_SERVER_RESOURCE_DATA_ID_SUFFIX;
+
     public static class A2A {
         
         public static final String CONSOLE_PATH = "/v3/console/ai/a2a";
@@ -108,5 +114,157 @@ public class Constants {
         public static final String NACOS_AGENT_ENDPOINT_PROTOCOL_KEY = "__nacos.agent.endpoint.protocol__";
         
         public static final String NACOS_AGENT_ENDPOINT_QUERY_KEY = "__nacos.agent.endpoint.query__";
+        
+        public static final String NACOS_AGENT_ENDPOINT_PROTOCOL_VERSION_KEY = "__nacos.agent.endpoint.protocolVersion__";
+        
+        public static final String NACOS_AGENT_ENDPOINT_TENANT_KEY = "__nacos.agent.endpoint.tenant__";
+    }
+    
+    public static class Skills {
+        
+        public static final String CONSOLE_PATH = "/v3/console/ai/skills";
+        
+        public static final String ADMIN_PATH = "/v3/admin/ai/skills";
+
+        public static final String CLIENT_PATH = "/v3/client/ai/skills";
+        
+        public static final String SKILL_GROUP = "skill";
+        
+        public static final String SKILL_VERSION_GROUP = "skill-version";
+        
+        public static final String SEARCH_BLUR = "blur";
+        
+        public static final String SEARCH_ACCURATE = "accurate";
+        
+        public static final String SKILL_DEFAULT_NAMESPACE = "public";
+
+        /**
+         * Max allowed size for skill zip upload (10MB). Exceeding this will result in a clear error.
+         */
+        public static final long MAX_UPLOAD_ZIP_BYTES = 10L * 1024 * 1024;
+    }
+    
+    public static class AgentSpecs {
+        
+        public static final String ADMIN_PATH = "/v3/admin/ai/agentspecs";
+        
+        public static final String CLIENT_PATH = "/v3/client/ai/agentspecs";
+        
+        public static final String CONSOLE_PATH = "/v3/console/ai/agentspecs";
+        
+        public static final String AGENTSPEC_GROUP_PREFIX = "agentspec_";
+        
+        public static final String RESOURCE_TYPE_AGENTSPEC = "agentspec";
+        
+        public static final String AGENTSPEC_MAIN_DATA_ID = "manifest.json";
+        
+        /**
+         * Max allowed size for agentspec zip upload (50MB). Exceeding this will result in a clear error.
+         */
+        public static final long MAX_UPLOAD_ZIP_BYTES = 50L * 1024 * 1024;
+        
+        public static final String AGENTSPEC_STORAGE_PROVIDER_CONFIG_KEY = "nacos.ai.agentspec.storage.provider";
+        
+        public static final String SEARCH_BLUR = "blur";
+        
+        public static final String SEARCH_ACCURATE = "accurate";
+        
+        public static final String AGENTSPEC_DEFAULT_NAMESPACE = "public";
+    }
+    
+    public static class Pipeline {
+        
+        public static final String ADMIN_PATH = "/v3/admin/ai/pipelines";
+        
+        public static final String CONSOLE_PATH = "/v3/console/ai/pipelines";
+        
+        /**
+         * List pipeline executions (aligned with Skill/Prompt {@code /list} style).
+         */
+        public static final String LIST_SUBPATH = "/list";
+        
+        /**
+         * Get single pipeline execution by id (query parameter {@code pipelineId}).
+         */
+        public static final String DETAIL_SUBPATH = "/detail";
+    }
+    
+    public static class Prompt {
+        
+        public static final String CONSOLE_PATH = "/v3/console/ai/prompt";
+        
+        public static final String ADMIN_PATH = "/v3/admin/ai/prompt";
+        
+        public static final String CLIENT_PATH = "/v3/client/ai/prompt";
+        
+        /**
+         * Fixed group for all prompt configurations.
+         */
+        public static final String PROMPT_GROUP = "nacos-ai-prompt";
+        
+        /**
+         * DataId suffix for prompt configurations.
+         */
+        public static final String PROMPT_DATA_ID_SUFFIX = ".json";
+        
+        /**
+         * DataId suffix for descriptor side prompt metadata.
+         */
+        public static final String DESCRIPTOR_DATA_ID_SUFFIX = ".descriptor" + PROMPT_DATA_ID_SUFFIX;
+        
+        /**
+         * DataId suffix for runtime label/version mapping.
+         */
+        public static final String LABEL_VERSION_MAPPING_DATA_ID_SUFFIX = ".label-version-mapping" + PROMPT_DATA_ID_SUFFIX;
+        
+        /**
+         * Key for prompt version in extInfo.
+         */
+        public static final String EXT_PROMPT_VERSION = "prompt_version";
+        
+        /**
+         * Key for prompt commit message in extInfo.
+         */
+        public static final String EXT_PROMPT_COMMIT_MSG = "prompt_commit_msg";
+        
+        /**
+         * Search mode: blur search.
+         */
+        public static final String SEARCH_BLUR = "blur";
+        
+        /**
+         * Search mode: accurate search.
+         */
+        public static final String SEARCH_ACCURATE = "accurate";
+        
+        /**
+         * Default namespace for prompt.
+         */
+        public static final String PROMPT_DEFAULT_NAMESPACE = "public";
+        
+        /**
+         * Config type for prompt.
+         */
+        public static final String PROMPT_CONFIG_TYPE = "json";
+        
+        /**
+         * JSON field: promptKey.
+         */
+        public static final String FIELD_PROMPT_KEY = "promptKey";
+        
+        /**
+         * JSON field: version.
+         */
+        public static final String FIELD_VERSION = "version";
+        
+        /**
+         * JSON field: template.
+         */
+        public static final String FIELD_TEMPLATE = "template";
+        
+        /**
+         * JSON field: commitMsg.
+         */
+        public static final String FIELD_COMMIT_MSG = "commitMsg";
     }
 }

@@ -93,6 +93,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -528,7 +529,6 @@ public class ClientWorker implements Closeable {
         return StringUtils.isBlank(group) ? Constants.DEFAULT_GROUP : group.trim();
     }
     
-    @SuppressWarnings("PMD.ThreadPoolCreationRule")
     public ClientWorker(final ConfigFilterChainManager configFilterChainManager,
             ConfigServerListManager serverListManager, final NacosClientProperties properties) throws NacosException {
         this.configFilterChainManager = configFilterChainManager;
@@ -652,7 +652,7 @@ public class ClientWorker implements Closeable {
     
     public class ConfigRpcTransportClient extends ConfigTransportClient {
         
-        Map<String, ExecutorService> multiTaskExecutor = new HashMap<>();
+        Map<String, ExecutorService> multiTaskExecutor = new ConcurrentHashMap<>();
 
         private ExecutorService listenExecutor;
 
@@ -769,7 +769,6 @@ public class ClientWorker implements Closeable {
             return response;
         }
         
-        @SuppressWarnings("PMD.MethodTooLongRule")
         private void initRpcClientHandler(final RpcClient rpcClientInner) {
             /*
              * Register Config Change /Config ReSync Handler
@@ -999,15 +998,12 @@ public class ClientWorker implements Closeable {
         }
         
         private ExecutorService ensureSyncExecutor(String taskId) {
-            if (!multiTaskExecutor.containsKey(taskId)) {
-                multiTaskExecutor.put(taskId,
-                        new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), r -> {
-                            Thread thread = new Thread(r, "nacos.client.config.listener.task-" + taskId);
-                            thread.setDaemon(true);
-                            return thread;
-                        }));
-            }
-            return multiTaskExecutor.get(taskId);
+            return multiTaskExecutor.computeIfAbsent(taskId, k -> new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>(), r -> {
+                        Thread thread = new Thread(r, "nacos.client.config.listener.task-" + taskId);
+                        thread.setDaemon(true);
+                        return thread;
+                    }));
         }
         
         private void refreshContentAndCheck(RpcClient rpcClient, String groupKey, boolean notify) {
@@ -1088,7 +1084,6 @@ public class ClientWorker implements Closeable {
             }
         }
         
-        @SuppressWarnings("PMD.MethodTooLongRule")
         private boolean checkListenCache(Map<String, List<CacheData>> listenCachesMap) throws NacosException {
             
             final AtomicBoolean hasChangedKeys = new AtomicBoolean(false);
@@ -1260,6 +1255,8 @@ public class ClientWorker implements Closeable {
             if (response.isSuccess()) {
                 LocalConfigInfoProcessor.saveSnapshot(this.getName(), dataId, group, tenant, response.getContent());
                 configResponse.setContent(response.getContent());
+                // Set MD5 from server response
+                configResponse.setMd5(response.getMd5());
                 String configType;
                 if (StringUtils.isNotBlank(response.getContentType())) {
                     configType = response.getContentType();

@@ -72,7 +72,8 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
      * @param service The service of the Nacos.
      */
     public void removePublisherIndexesByEmptyService(Service service) {
-        if (publisherIndexes.containsKey(service) && publisherIndexes.get(service).isEmpty()) {
+        Set<String> publishers = publisherIndexes.get(service);
+        if (publishers != null && publishers.isEmpty()) {
             publisherIndexes.remove(service);
         }
     }
@@ -157,13 +158,9 @@ public class ClientServiceIndexesManager extends SmartSubscriber {
     }
     
     private void removeSubscriberIndexes(Service service, String clientId) {
-        Set<String> clientIds = subscriberIndexes.get(service);
-        if (clientIds == null) {
-            return;
-        }
-        clientIds.remove(clientId);
-        if (clientIds.isEmpty()) {
-            subscriberIndexes.remove(service);
-        }
+        subscriberIndexes.computeIfPresent(service, (s, clientIds) -> {
+            clientIds.remove(clientId);
+            return clientIds.isEmpty() ? null : clientIds;
+        });
     }
 }

@@ -24,16 +24,22 @@ import changeTheme from '../../theme';
 import changeNameShow from '../../components/NameSpaceList/show';
 import { connect } from 'react-redux';
 import { LANGUAGE_KEY, NAME_SHOW, THEME } from '../../constants';
+import CopilotConfig from './CopilotConfig';
 
 const { Group: RadioGroup } = Radio;
 
-@connect(state => ({ ...state.locale }), { changeLanguage, changeTheme, changeNameShow })
+@connect(state => ({ ...state.locale, copilotEnabled: state.base.copilotEnabled }), {
+  changeLanguage,
+  changeTheme,
+  changeNameShow,
+})
 @ConfigProvider.config
 class SettingCenter extends React.Component {
   static displayName = 'SettingCenter';
 
   static propTypes = {
     locale: PropTypes.object,
+    copilotEnabled: PropTypes.bool,
     changeLanguage: PropTypes.func,
     changeTheme: PropTypes.func,
     changeNameShow: PropTypes.func,
@@ -49,6 +55,7 @@ class SettingCenter extends React.Component {
       language: defaultLanguage === 'en-US' ? 'en-US' : 'zh-CN',
       nameShow: defaultShow === 'select' ? 'select' : 'label',
     };
+    this.copilotSaveConfig = null; // 保存 Copilot 配置的方法
   }
 
   newTheme(value) {
@@ -69,18 +76,29 @@ class SettingCenter extends React.Component {
     });
   }
 
-  submit() {
+  submit = async () => {
     const { changeLanguage, changeTheme, changeNameShow } = this.props;
     const currentLanguage = this.state.language;
     const currentTheme = this.state.theme;
     const currentNameShow = this.state.nameShow;
+
+    // 保存 Copilot 配置
+    if (this.copilotSaveConfig) {
+      await this.copilotSaveConfig();
+    }
+
+    // 保存其他设置
     changeLanguage(currentLanguage);
     changeTheme(currentTheme);
     changeNameShow(currentNameShow);
-  }
+  };
+
+  handleCopilotSaveReady = saveMethod => {
+    this.copilotSaveConfig = saveMethod;
+  };
 
   render() {
-    const { locale = {} } = this.props;
+    const { locale = {}, copilotEnabled } = this.props;
     const themeList = [
       { value: 'light', label: locale.settingLight },
       { value: 'dark', label: locale.settingDark },
@@ -122,6 +140,12 @@ class SettingCenter extends React.Component {
                 onChange={this.newNameShow.bind(this)}
               />
             </div>
+            {copilotEnabled && (
+              <div className="setting-checkbox" style={{ flex: '0 0 100%', height: 'auto' }}>
+                <div className="setting-span">{locale.copilotConfigSection || 'Copilot配置'}</div>
+                <CopilotConfig locale={locale} onSaveReady={this.handleCopilotSaveReady} />
+              </div>
+            )}
           </div>
           <Button type="primary" onClick={this.submit.bind(this)}>
             {locale.settingSubmit}
